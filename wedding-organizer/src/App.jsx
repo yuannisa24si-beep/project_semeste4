@@ -1,41 +1,37 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Loading from './components/Loading';
-import ErrorPage from './components/ErrorPage';
-import MainLayout from './layouts/MainLayout';
-import AuthLayout from './layouts/AuthLayout';
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import MainLayout from './layouts/MainLayout'
+import AuthLayout from './layouts/AuthLayout'
+import Loading from './components/Loading'
+import ErrorPage from './components/ErrorPage'
 
-// Lazy load pages
-const Home = lazy(() => import('./pages/main/Home'));
-const About = lazy(() => import('./pages/main/About'));
-const Album = lazy(() => import('./pages/main/Album'));
-const Budget = lazy(() => import('./pages/main/Budget'));
-const Login = lazy(() => import('./pages/auth/Login'));
-const Register = lazy(() => import('./pages/auth/Register'));
+const Home    = lazy(() => import('./pages/main/Home'))
+const Services = lazy(() => import('./pages/main/Services'))
+const Blog    = lazy(() => import('./pages/main/Blog'))
+const Gallery = lazy(() => import('./pages/main/Gallery'))
+const Contact = lazy(() => import('./pages/main/Contact'))
+const Login   = lazy(() => import('./pages/auth/Login'))
+const Register = lazy(() => import('./pages/auth/Register'))
 
-const App = () => (
-  <BrowserRouter>
-    <Suspense fallback={<Loading />}>
-      <Routes>
-        {/* Auth routes */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Route>
-
-        {/* Main routes */}
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/album" element={<Album />} />
-          <Route path="/budget" element={<Budget />} />
-        </Route>
-
-        {/* Fallback */}
-        <Route path="*" element={<ErrorPage />} />
-      </Routes>
-    </Suspense>
-  </BrowserRouter>
-);
-
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route element={<AuthLayout />}>
+            <Route path="/login"    element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Route>
+          <Route element={<MainLayout />}>
+            <Route path="/"         element={<Home />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/blog"     element={<Blog />} />
+            <Route path="/gallery"  element={<Gallery />} />
+            <Route path="/contact"  element={<Contact />} />
+          </Route>
+          <Route path="*" element={<ErrorPage />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  )
+}

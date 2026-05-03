@@ -1,31 +1,34 @@
-import { NavLink } from 'react-router-dom';
+// Sidebar tidak dipakai di MainLayout (full-page layout),
+// tapi tersedia jika dibutuhkan di halaman dashboard
+import { NavLink } from 'react-router-dom'
 
-const navItems = [
-  { to: '/', label: '🏠 Home' },
-  { to: '/about', label: '💑 About' },
-  { to: '/album', label: '📷 Album' },
-  { to: '/budget', label: '💰 Budget' },
-];
+const items = [
+  { to: '/', label: 'Home', icon: '🏠' },
+  { to: '/services', label: 'Services', icon: '💼' },
+  { to: '/blog', label: 'Blog', icon: '📝' },
+  { to: '/gallery', label: 'Gallery', icon: '📷' },
+]
 
-const Sidebar = () => (
-  <aside className="w-56 bg-white shadow-md min-h-screen p-4">
-    <p className="text-pink-400 text-xs uppercase tracking-widest mb-4 font-semibold">Menu</p>
-    <nav className="flex flex-col gap-2">
-      {navItems.map(({ to, label }) => (
-        <NavLink
-          key={to}
-          to={to}
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isActive ? 'bg-pink-100 text-pink-700' : 'text-gray-500 hover:bg-pink-50 hover:text-pink-600'
-            }`
-          }
-        >
-          {label}
+export default function Sidebar() {
+  return (
+    <aside style={{
+      width: 220, background: '#fff',
+      borderRight: '1px solid #f7e0e0',
+      minHeight: '100vh', padding: '2rem 1rem'
+    }}>
+      {items.map(({ to, label, icon }) => (
+        <NavLink key={to} to={to} end={to === '/'}
+          style={({ isActive }) => ({
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 14px', borderRadius: 10, marginBottom: 4,
+            fontSize: 14, fontWeight: 500,
+            background: isActive ? '#f7e0e0' : 'transparent',
+            color: isActive ? '#c97070' : '#6b7280',
+            transition: 'all 0.2s'
+          })}>
+          <span>{icon}</span> {label}
         </NavLink>
       ))}
-    </nav>
-  </aside>
-);
-
-export default Sidebar;
+    </aside>
+  )
+}

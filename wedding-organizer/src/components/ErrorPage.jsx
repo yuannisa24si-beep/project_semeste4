@@ -1,16 +1,26 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'
 
-const ErrorPage = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-pink-50 text-center px-4">
-    <div className="text-6xl mb-4">💔</div>
-    <h1 className="text-3xl font-bold text-pink-600 mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
-      Halaman Tidak Ditemukan
-    </h1>
-    <p className="text-pink-400 mb-6 text-sm">Maaf, halaman yang kamu cari tidak ada.</p>
-    <Link to="/" className="bg-pink-500 text-white px-6 py-2 rounded-full text-sm hover:bg-pink-600 transition">
-      Kembali ke Beranda
-    </Link>
-  </div>
-);
-
-export default ErrorPage;
+export default function ErrorPage() {
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#fdf4f4', textAlign: 'center', padding: '2rem'
+    }}>
+      <div style={{ fontSize: 80, marginBottom: 16 }}>🌸</div>
+      <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 48, color: '#a84f4f', marginBottom: 8 }}>
+        404
+      </h1>
+      <p style={{ color: '#6b7280', marginBottom: 32, fontSize: 16 }}>
+        Halaman yang kamu cari tidak ditemukan.
+      </p>
+      <Link to="/" style={{
+        background: '#c97070', color: '#fff',
+        padding: '12px 32px', borderRadius: 50,
+        fontSize: 14, letterSpacing: 1, fontWeight: 500
+      }}>
+        Kembali ke Beranda
+      </Link>
+    </div>
+  )
+}

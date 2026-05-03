@@ -1,10 +1,23 @@
-const PageHeader = ({ title, subtitle }) => (
-  <div className="mb-6">
-    <h1 className="text-2xl font-bold text-pink-700" style={{ fontFamily: 'Playfair Display, serif' }}>
-      {title}
-    </h1>
-    {subtitle && <p className="text-pink-400 text-sm mt-1">{subtitle}</p>}
-  </div>
-);
-
-export default PageHeader;
+export default function PageHeader({ title, subtitle }) {
+  return (
+    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: 12, marginBottom: 8
+      }}>
+        <span style={{ height: 1, width: 48, background: '#e8a0a0', display: 'block' }} />
+        <span style={{ fontSize: 18 }}>🌸</span>
+        <span style={{ height: 1, width: 48, background: '#e8a0a0', display: 'block' }} />
+      </div>
+      <h2 style={{
+        fontFamily: 'Cormorant Garamond, serif',
+        fontSize: 42, color: '#a84f4f', fontWeight: 600, marginBottom: 8
+      }}>
+        {title}
+      </h2>
+      {subtitle && (
+        <p style={{ color: '#9ca3af', fontSize: 14, letterSpacing: 1 }}>{subtitle}</p>
+      )}
+    </div>
+  )
+}

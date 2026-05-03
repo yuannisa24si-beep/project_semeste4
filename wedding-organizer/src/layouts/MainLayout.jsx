@@ -1,17 +1,15 @@
-import { Outlet } from 'react-router-dom';
-import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
+import { Outlet } from 'react-router-dom'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
 
-const MainLayout = () => (
-  <div className="min-h-screen bg-pink-50">
-    <Header />
-    <div className="flex max-w-5xl mx-auto">
-      <Sidebar />
-      <main className="flex-1 p-6">
+export default function MainLayout() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Header />
+      <main style={{ flex: 1 }}>
         <Outlet />
       </main>
+      <Footer />
     </div>
-  </div>
-);
-
-export default MainLayout;
+  )
+}
