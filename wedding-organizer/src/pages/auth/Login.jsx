@@ -8,7 +8,7 @@ export default function Login() {
 
   const handle = (e) => {
     e.preventDefault()
-    navigate('/')
+    navigate('/admin')
   }
 
   const inp = {
