@@ -1,3 +1,4 @@
+// src/layouts/AdminLayout.jsx
 import { useState } from 'react'
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
 
@@ -7,6 +8,14 @@ const menuItems = [
   { to: '/admin/clients', label: 'Klien', icon: '👥' },
   { to: '/admin/services', label: 'Layanan', icon: '💼' },
   { to: '/admin/gallery', label: 'Galeri', icon: '📷' },
+   { to: '/admin/profile', label: 'Profil', icon: '👤' },
+  { to: '/admin/settings', label: 'Pengaturan', icon: '⚙️' },
+  { to: '/admin/invoice', label: 'Invoice', icon: '🧾' },
+  { to: '/admin/security', label: 'Keamanan', icon: '🔒' },
+  { to: '/admin/pricing', label: 'Harga', icon: '💰' },
+  { to: '/admin/notifications', label: 'Notifikasi', icon: '🔔' },
+  { to: '/admin/chat', label: 'Chat', icon: '💬' },
+  { to: '/admin/projects', label: 'Proyek', icon: '📁' },
 ]
 
 export default function AdminLayout() {
@@ -14,13 +23,12 @@ export default function AdminLayout() {
   const navigate = useNavigate()
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#fdf4f4' }}>
-
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f5f5' }}>
       {/* Sidebar */}
       <aside style={{
-        width: collapsed ? 64 : 220,
-        background: '#fff',
-        borderRight: '1px solid #f7e0e0',
+        width: collapsed ? 64 : 240,
+        background: '#ffffff',
+        borderRight: '1px solid #d3d3d3',
         display: 'flex', flexDirection: 'column',
         transition: 'width 0.25s ease',
         flexShrink: 0
@@ -28,83 +36,84 @@ export default function AdminLayout() {
         {/* Logo */}
         <div style={{
           padding: collapsed ? '20px 0' : '20px 16px',
-          borderBottom: '1px solid #f7e0e0',
+          borderBottom: '1px solid #d3d3d3',
           display: 'flex', alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between'
         }}>
           {!collapsed && (
             <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🌹</span>
+              <span style={{ fontSize: 24 }}>💒</span>
               <span style={{
-                fontFamily: 'Cormorant Garamond, serif',
-                fontSize: 16, fontWeight: 600, color: '#a84f4f'
-              }}>Admin Panel</span>
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 16, fontWeight: 700, color: '#0000ff'
+              }}>Wedding Organizer</span>
             </Link>
           )}
-          {collapsed && <span style={{ fontSize: 20 }}>🌹</span>}
+          {collapsed && <span style={{ fontSize: 24 }}>💒</span>}
           <button onClick={() => setCollapsed(!collapsed)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#c97070', fontSize: 16, padding: 4
+            color: '#0000ff', fontSize: 16, padding: 4
           }}>
             {collapsed ? '→' : '←'}
           </button>
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 8px' }}>
+        {/* Nav Menu */}
+        <nav style={{ flex: 1, padding: '16px 12px' }}>
           {menuItems.map(({ to, label, icon }) => (
             <NavLink key={to} to={to} end={to === '/admin'}
               style={({ isActive }) => ({
                 display: 'flex', alignItems: 'center',
-                gap: collapsed ? 0 : 10,
+                gap: collapsed ? 0 : 12,
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                padding: '10px 12px', borderRadius: 10, marginBottom: 4,
-                fontSize: 13, fontWeight: 500,
-                background: isActive ? '#f7e0e0' : 'transparent',
-                color: isActive ? '#c97070' : '#6b7280',
-                transition: 'all 0.2s', textDecoration: 'none'
+                padding: '10px 12px', borderRadius: 8, marginBottom: 4,
+                fontSize: 14, fontWeight: 500,
+                background: isActive ? '#e6e6ff' : 'transparent',
+                color: isActive ? '#0000ff' : '#666666',
+                textDecoration: 'none', transition: 'all 0.2s'
               })}>
-              <span style={{ fontSize: 18 }}>{icon}</span>
+              <span style={{ fontSize: 20 }}>{icon}</span>
               {!collapsed && <span>{label}</span>}
             </NavLink>
           ))}
         </nav>
 
         {/* Logout */}
-        <div style={{ padding: '12px 8px', borderTop: '1px solid #f7e0e0' }}>
+        <div style={{ padding: '16px 12px', borderTop: '1px solid #d3d3d3' }}>
           <button onClick={() => navigate('/login')} style={{
             width: '100%', display: 'flex', alignItems: 'center',
-            gap: collapsed ? 0 : 10,
+            gap: collapsed ? 0 : 12,
             justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: '10px 12px', borderRadius: 10,
+            padding: '10px 12px', borderRadius: 8,
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: 500, color: '#9ca3af',
+            fontSize: 14, fontWeight: 500, color: '#ef4444',
             transition: 'all 0.2s'
           }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f7e0e0'}
+            onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
-            <span style={{ fontSize: 18 }}>🚪</span>
+            <span style={{ fontSize: 20 }}>🚪</span>
             {!collapsed && <span>Keluar</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Topbar */}
         <header style={{
-          background: '#fff', borderBottom: '1px solid #f7e0e0',
+          background: '#ffffff', borderBottom: '1px solid #d3d3d3',
           padding: '0 24px', height: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
-          <p style={{ fontSize: 13, color: '#9ca3af' }}>
-            Selamat datang, <span style={{ color: '#c97070', fontWeight: 600 }}>Admin</span>
+          <p style={{ fontSize: 14, color: '#666666' }}>
+            Selamat datang, <span style={{ color: '#0000ff', fontWeight: 600 }}>Admin</span>
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 20 }}>🔔</span>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f7e0e0, #e8a0a0)',
+              background: '#e6e6ff',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
             }}>👤</div>
           </div>

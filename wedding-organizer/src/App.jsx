@@ -4,6 +4,14 @@ import AuthLayout from './layouts/AuthLayout'
 import AdminLayout from './layouts/AdminLayout'
 import Loading from './components/Loading'
 import ErrorPage from './components/ErrorPage'
+import Profile from './pages/admin/Profile'
+import Settings from './pages/admin/Settings'
+import Invoice from './pages/admin/Invoice'
+import Security from './pages/admin/Security'
+import Pricing from './pages/admin/Pricing'
+import Notifications from './pages/admin/Notifications'
+import Chat from './pages/admin/Chat'
+import Projects from './pages/admin/Projects'
 
 // Auth
 const Login    = lazy(() => import('./pages/auth/Login'))
@@ -37,6 +45,14 @@ export default function App() {
             <Route path="clients"    element={<Clients />} />
             <Route path="services"   element={<Services />} />
             <Route path="gallery"    element={<Gallery />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="invoice" element={<Invoice />} />
+            <Route path="security" element={<Security />} />
+            <Route path="pricing" element={<Pricing />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="chat" element={<Chat />} />
+            <Route path="projects" element={<Projects />} />
           </Route>
 
           <Route path="*" element={<ErrorPage />} />
