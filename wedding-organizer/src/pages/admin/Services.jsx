@@ -1,5 +1,13 @@
 // src/pages/admin/Services.jsx
+// src/pages/admin/Services.jsx
 import { useState } from 'react'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import Card from '../../components/Card'
+import Modal from '../../components/Modal'
+import InputField from '../../components/InputField'
+import PageHeader from '../../components/PageHeader'
+import Alert from '../../components/Alert'
 
 const initialServices = [
   { id: 1, name: 'Full Package', price: 25000000, desc: 'Paket lengkap semua layanan pernikahan', status: 'Aktif' },

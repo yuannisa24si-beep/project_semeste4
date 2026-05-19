@@ -1,5 +1,11 @@
 // src/pages/admin/Gallery.jsx
+// src/pages/admin/Gallery.jsx
 import { useState } from 'react'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import Modal from '../../components/Modal'
+import PageHeader from '../../components/PageHeader'
+import SelectField from '../../components/SelectField'
 
 const initialPhotos = [
   { id: 1, couple: 'Andhie & Yasmin', category: 'Outdoor', emoji: '👰', date: '12 Jun 2025' },

@@ -1,5 +1,12 @@
 // src/pages/admin/Clients.jsx
 import { useState } from 'react'
+import Button from '../../components/Button'
+import Badge from '../../components/Badge'
+import Avatar from '../../components/Avatar'
+import Card from '../../components/Card'
+import InputField from '../../components/InputField'
+import Modal from '../../components/Modal'
+import PageHeader from '../../components/PageHeader'
 
 const clients = [
   { id: 1, name: 'Andhie & Yasmin', email: 'andhie@email.com', phone: '0812-3456-7890', date: '12 Jun 2026', package: 'Full Package', total: 15000000 },

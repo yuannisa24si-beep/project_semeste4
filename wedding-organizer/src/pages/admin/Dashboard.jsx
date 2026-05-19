@@ -1,15 +1,23 @@
 // src/pages/admin/Dashboard.jsx
-import { Link } from 'react-router-dom'
+import StatCard from '../../components/StatCard'
+import Card from '../../components/Card'
+import PageHeader from '../../components/PageHeader'
 
-// Data statistik utama (seperti di gambar: 300, 1m, 345$, 68)
+// Data statistik utama
 const stats = [
-  { label: 'Total Pemesanan', value: '48', icon: '📋', change: '+12%', color: '#0000ff' },
-  { label: 'Klien Aktif', value: '32', icon: '👥', change: '+5%', color: '#0000ff' },
-  { label: 'Pendapatan', value: 'Rp 48jt', icon: '💰', change: '+18%', color: '#0000ff' },
-  { label: 'Event Mendatang', value: '7', icon: '📅', change: '2 minggu', color: '#0000ff' },
+  { label: 'Total Pemesanan', value: '48', icon: '📋', change: '+12%' },
+  { label: 'Klien Aktif', value: '32', icon: '👥', change: '+5%' },
+  { label: 'Pendapatan', value: 'Rp 48jt', icon: '💰', change: '+18%' },
+  { label: 'Event Mendatang', value: '7', icon: '📅', change: '2 minggu' },
 ]
 
-// Data untuk "Active Users" -> diubah jadi "Aktif Bulan Ini"
+// Dashboard.jsx - saat klik tombol
+const handleSuccess = () => {
+  setShowConfetti(true)
+  // aksi lainnya
+}
+
+// Data untuk "Aktif Bulan Ini"
 const monthlyActivity = [
   { month: 'Jan', value: 25 },
   { month: 'Feb', value: 28 },
@@ -19,7 +27,7 @@ const monthlyActivity = [
   { month: 'Jun', value: 38 },
 ]
 
-// Data untuk "Sales by Age" -> diubah jadi "Paket Terlaris"
+// Data untuk "Paket Terlaris"
 const topPackages = [
   { name: 'Full Package', percentage: 35, amount: 'Rp 85jt', range: '35-40' },
   { name: 'Photography', percentage: 28, amount: 'Rp 42jt', range: '30-35' },
@@ -27,7 +35,7 @@ const topPackages = [
   { name: 'Catering', percentage: 15, amount: 'Rp 28jt', range: '15-20' },
 ]
 
-// Data untuk "Your Earning This Month" -> Pendapatan per bulan
+// Data untuk pendapatan per bulan
 const monthlyEarnings = [
   { month: 'Jan', value: 35000000 },
   { month: 'Feb', value: 42000000 },
@@ -37,7 +45,7 @@ const monthlyEarnings = [
   { month: 'Jun', value: 52000000 },
 ]
 
-// Data untuk "Earnings by Item" -> Layanan terlaris
+// Data layanan terlaris
 const topServices = [
   { name: 'Full Package', amount: 'Rp 85jt', percentage: 40 },
   { name: 'Photography', amount: 'Rp 42jt', percentage: 20 },
@@ -46,7 +54,7 @@ const topServices = [
   { name: 'Entertainment', amount: 'Rp 15jt', percentage: 7 },
 ]
 
-// Data untuk "Earnings by Year" -> Pendapatan per tahun
+// Data pendapatan per tahun
 const yearlyEarnings = [
   { year: '2022', amount: 180000000 },
   { year: '2023', amount: 250000000 },
@@ -71,17 +79,13 @@ const fmtShort = (n) => {
 export default function Dashboard() {
   return (
     <div style={{ padding: '0 4px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 30, fontWeight: 600, color: '#000000', marginBottom: 4 }}>
-          Dashboard
-        </h1>
-        <p style={{ fontSize: 14, color: '#666666' }}>
-          Ringkasan aktivitas Wedding Organizer
-        </p>
-      </div>
+      {/* ===== HEADER PAKAI PAGEHEADER ===== */}
+      <PageHeader 
+        title="Dashboard" 
+        subtitle="Ringkasan aktivitas Wedding Organizer"
+      />
 
-      {/* ===== STATS CARDS (4 card seperti gambar) ===== */}
+      {/* ===== STATS CARDS (4 card) ===== */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -89,68 +93,33 @@ export default function Dashboard() {
         marginBottom: 28
       }}>
         {stats.map((stat, idx) => (
-          <div key={idx} style={{
-            background: '#fff',
-            borderRadius: 12,
-            border: '1px solid #d3d3d3',
-            padding: '20px',
-            transition: 'box-shadow 0.2s'
-          }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 500, color: '#666666', marginBottom: 8 }}>
-                  {stat.label}
-                </p>
-                <p style={{ fontSize: 28, fontWeight: 700, color: '#000000', marginBottom: 4 }}>
-                  {stat.value}
-                </p>
-                <p style={{ fontSize: 12, fontWeight: 600, color: '#10b981' }}>
-                  {stat.change}
-                </p>
-              </div>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: '#e6e6ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 24
-              }}>
-                {stat.icon}
-              </div>
-            </div>
-          </div>
+          <StatCard 
+            key={idx}
+            label={stat.label}
+            value={stat.value}
+            change={stat.change}
+            icon={stat.icon}
+          />
         ))}
       </div>
 
-      {/* ===== ROW 2: Active Users + Sales by Age (2 kolom) ===== */}
+      {/* ===== ROW 2: Aktif Bulan Ini + Paket Terlaris ===== */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: 20,
         marginBottom: 28
       }}>
-        {/* Aktif Bulan Ini (seperti Active Users) */}
-        <div style={{
-          background: '#fff',
-          borderRadius: 12,
-          border: '1px solid #d3d3d3',
-          padding: '20px'
-        }}>
+        {/* Aktif Bulan Ini */}
+        <Card title="Aktif Bulan Ini" padding="20px">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#000000' }}>Aktif Bulan Ini</h3>
             <span style={{ fontSize: 13, color: '#0000ff' }}>+18%</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 20 }}>
             <span style={{ fontSize: 36, fontWeight: 700, color: '#0000ff' }}>38</span>
             <span style={{ fontSize: 14, color: '#666666' }}>klien aktif</span>
           </div>
-          {/* Bar Chart Sederhana */}
+          {/* Bar Chart */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 80 }}>
             {monthlyActivity.map((item, idx) => (
               <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
@@ -165,18 +134,10 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
-        {/* Paket Terlaris (seperti Sales by Age) */}
-        <div style={{
-          background: '#fff',
-          borderRadius: 12,
-          border: '1px solid #d3d3d3',
-          padding: '20px'
-        }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#000000', marginBottom: 16 }}>
-            Paket Terlaris
-          </h3>
+        {/* Paket Terlaris */}
+        <Card title="Paket Terlaris" padding="20px">
           {topPackages.map((pkg, idx) => (
             <div key={idx} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -202,24 +163,17 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-        </div>
+        </Card>
       </div>
 
-      {/* ===== ROW 3: Your Earning This Month (full width) ===== */}
-      <div style={{
-        background: '#fff',
-        borderRadius: 12,
-        border: '1px solid #d3d3d3',
-        padding: '20px',
-        marginBottom: 28
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#000000' }}>Pendapatan Bulan Ini</h3>
+      {/* ===== ROW 3: Pendapatan Bulan Ini ===== */}
+      <Card title="Pendapatan Bulan Ini" padding="20px" style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
           <span style={{ fontSize: 24, fontWeight: 700, color: '#0000ff' }}>
             {fmt(52000000)}
           </span>
         </div>
-        {/* Line Chart Sederhana */}
+        {/* Line Chart */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 100 }}>
           {monthlyEarnings.map((item, idx) => (
             <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
@@ -234,24 +188,16 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* ===== ROW 4: Earnings by Item + Earnings by Year (2 kolom) ===== */}
+      {/* ===== ROW 4: Layanan Terlaris + Pendapatan per Tahun ===== */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: 20
       }}>
-        {/* Layanan Terlaris (Earnings by Item) */}
-        <div style={{
-          background: '#fff',
-          borderRadius: 12,
-          border: '1px solid #d3d3d3',
-          padding: '20px'
-        }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#000000', marginBottom: 16 }}>
-            Layanan Terlaris
-          </h3>
+        {/* Layanan Terlaris */}
+        <Card title="Layanan Terlaris" padding="20px">
           {topServices.map((service, idx) => (
             <div key={idx} style={{
               display: 'flex',
@@ -273,18 +219,10 @@ export default function Dashboard() {
               <span style={{ fontSize: 14, fontWeight: 600, color: '#0000ff' }}>{service.amount}</span>
             </div>
           ))}
-        </div>
+        </Card>
 
-        {/* Pendapatan per Tahun (Earnings by Year) */}
-        <div style={{
-          background: '#fff',
-          borderRadius: 12,
-          border: '1px solid #d3d3d3',
-          padding: '20px'
-        }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#000000', marginBottom: 16 }}>
-            Pendapatan per Tahun
-          </h3>
+        {/* Pendapatan per Tahun */}
+        <Card title="Pendapatan per Tahun" padding="20px">
           {yearlyEarnings.map((year, idx) => (
             <div key={idx} style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -306,7 +244,6 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-          {/* Total */}
           <div style={{
             marginTop: 16,
             paddingTop: 12,
@@ -319,7 +256,7 @@ export default function Dashboard() {
               {fmtShort(810000000)}
             </span>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   )
