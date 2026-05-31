@@ -3,19 +3,13 @@ import { useState } from 'react'
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
 
 const menuItems = [
-  { to: '/admin', label: 'Dashboard', icon: '📊' },
-  { to: '/admin/bookings', label: 'Pemesanan', icon: '📋' },
-  { to: '/admin/clients', label: 'Klien', icon: '👥' },
-  { to: '/admin/services', label: 'Layanan', icon: '💼' },
-  { to: '/admin/gallery', label: 'Galeri', icon: '📷' },
-   { to: '/admin/profile', label: 'Profil', icon: '👤' },
-  { to: '/admin/settings', label: 'Pengaturan', icon: '⚙️' },
-  { to: '/admin/invoice', label: 'Invoice', icon: '🧾' },
-  { to: '/admin/security', label: 'Keamanan', icon: '🔒' },
-  { to: '/admin/pricing', label: 'Harga', icon: '💰' },
-  { to: '/admin/notifications', label: 'Notifikasi', icon: '🔔' },
-  { to: '/admin/chat', label: 'Chat', icon: '💬' },
-  { to: '/admin/projects', label: 'Proyek', icon: '📁' },
+  { to: '/admin',           label: 'Dashboard',  icon: '📊' },
+  { to: '/admin/bookings',  label: 'Pemesanan',  icon: '📋' },
+  { to: '/admin/clients',   label: 'Klien',      icon: '👥' },
+  { to: '/admin/services',  label: 'Layanan',    icon: '💼' },
+  { to: '/admin/gallery',   label: 'Galeri',     icon: '📷' },
+  { to: '/admin/invoice',   label: 'Invoice',    icon: '🧾' },
+  { to: '/admin/chat',      label: 'Chat',       icon: '💬' },
 ]
 
 export default function AdminLayout() {
