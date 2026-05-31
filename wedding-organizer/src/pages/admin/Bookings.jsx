@@ -5,8 +5,10 @@ import Badge from '../../components/Badge'
 import InputField from '../../components/InputField'
 import Table from '../../components/Table'
 import PageHeader from '../../components/PageHeader'
-import Modal from '../../components/Modal'
-import Confetti from '../../components/Confetti'  // ⭐ IMPORT
+import Dialog from '../../components/Dialog'
+import Tooltip from '../../components/Tooltip'
+import { TooltipProvider } from '../../components/Tooltip'
+import Confetti from '../../components/Confetti'
 
 const allBookings = [
   { id: 'WO-001', name: 'Andhie & Yasmin', phone: '0812-3456-7890', date: '12 Jun 2026', service: 'Full Package', status: 'Confirmed', amount: 15000000 },

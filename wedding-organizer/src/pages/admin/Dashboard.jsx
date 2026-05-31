@@ -2,6 +2,11 @@
 import StatCard from '../../components/StatCard'
 import Card from '../../components/Card'
 import PageHeader from '../../components/PageHeader'
+import Progress from '../../components/Progress'
+import Tooltip from '../../components/Tooltip'
+import { TooltipProvider } from '../../components/Tooltip'
+import Dialog from '../../components/Dialog'
+import Button from '../../components/Button'
 
 // Data statistik utama
 const stats = [
@@ -78,11 +83,31 @@ const fmtShort = (n) => {
 
 export default function Dashboard() {
   return (
+    <TooltipProvider>
     <div style={{ padding: '0 4px' }}>
       {/* ===== HEADER PAKAI PAGEHEADER ===== */}
-      <PageHeader 
-        title="Dashboard" 
+      <PageHeader
+        title="Dashboard"
         subtitle="Ringkasan aktivitas Wedding Organizer"
+        action={
+          <Dialog
+            trigger={<Button size="sm">+ Tambah Event</Button>}
+            title="Tambah Event Baru"
+            description="Isi detail event pernikahan yang akan datang"
+            footer={
+              <>
+                <Button variant="ghost" size="sm">Batal</Button>
+                <Button size="sm">Simpan</Button>
+              </>
+            }
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input placeholder="Nama pasangan" style={{ padding: '10px 14px', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 14, outline: 'none' }} />
+              <input type="date" style={{ padding: '10px 14px', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 14, outline: 'none' }} />
+              <input placeholder="Lokasi" style={{ padding: '10px 14px', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 14, outline: 'none' }} />
+            </div>
+          </Dialog>
+        }
       />
 
       {/* ===== STATS CARDS (4 card) ===== */}
@@ -136,28 +161,18 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* Paket Terlaris */}
+        {/* Paket Terlaris - pakai komponen Progress dari Radix UI */}
         <Card title="Paket Terlaris" padding="20px">
           {topPackages.map((pkg, idx) => (
-            <div key={idx} style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 13, color: '#000000' }}>{pkg.name}</span>
+            <div key={idx} style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Tooltip content={`${pkg.name}: ${pkg.amount}`} side="top">
+                  <span style={{ fontSize: 13, color: '#000000', cursor: 'default' }}>{pkg.name}</span>
+                </Tooltip>
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#0000ff' }}>{pkg.amount}</span>
               </div>
-              <div style={{
-                background: '#f3f4f6',
-                borderRadius: 4,
-                height: 8,
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  width: `${pkg.percentage}%`,
-                  background: '#0000ff',
-                  height: '100%',
-                  borderRadius: 4
-                }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+              <Progress value={pkg.percentage} max={100} showValue={false} color="#3b5bdb" size="sm" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
                 <span style={{ fontSize: 10, color: '#666666' }}>{pkg.percentage}%</span>
                 <span style={{ fontSize: 10, color: '#666666' }}>usia {pkg.range}</span>
               </div>
@@ -259,5 +274,6 @@ export default function Dashboard() {
         </Card>
       </div>
     </div>
+    </TooltipProvider>
   )
 }
