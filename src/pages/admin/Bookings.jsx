@@ -1,14 +1,8 @@
 // src/pages/admin/Bookings.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from '../../components/Modal'
 import Confetti from '../../components/Confetti'
-
-const initialBookings = [
-  { id: 'WO-001', name: 'Andhie & Yasmin', phone: '0812-3456-7890', date: '2026-06-12', service: 'Full Package', status: 'Confirmed', amount: 15000000 },
-  { id: 'WO-002', name: 'Budi & Sari',     phone: '0813-2345-6789', date: '2026-06-20', service: 'Photography',  status: 'Pending',    amount: 4000000  },
-  { id: 'WO-003', name: 'Reza & Dina',     phone: '0814-3456-7890', date: '2026-07-05', service: 'Decoration',   status: 'Confirmed',  amount: 8000000  },
-  { id: 'WO-004', name: 'Andi & Putri',    phone: '0815-4567-8901', date: '2026-07-18', service: 'Catering',     status: 'In Progress',amount: 12000000 },
-]
+import { supabase } from '../../lib/supabase'
 
 const SERVICES = ['Full Package', 'Photography', 'Decoration', 'Catering', 'Entertainment']
 const STATUSES = ['Pending', 'Confirmed', 'In Progress', 'Done', 'Cancelled']
@@ -23,10 +17,6 @@ const statusStyle = {
 }
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
-
-let idCounter = 5
-function genId() { return `WO-${String(idCounter++).padStart(3, '0')}` }
-
 const empty = { name: '', phone: '', date: '', service: 'Full Package', status: 'Pending', amount: '' }
 
 function Field({ label, type = 'text', value, onChange, placeholder, required }) {
@@ -37,11 +27,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, required })
         {label}{required && <span style={{ color: '#fa5252' }}> *</span>}
       </label>
       <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-        style={{
-          width: '100%', padding: '9px 12px', boxSizing: 'border-box',
-          border: `1.5px solid ${focused ? '#4f46e5' : '#dee2e6'}`,
-          borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit'
-        }}
+        style={{ width: '100%', padding: '9px 12px', boxSizing: 'border-box', border: `1.5px solid ${focused ? '#4f46e5' : '#dee2e6'}`, borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       />
     </div>
@@ -54,12 +40,7 @@ function SelectF({ label, value, onChange, options }) {
     <div style={{ marginBottom: 13 }}>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 5 }}>{label}</label>
       <select value={value} onChange={onChange}
-        style={{
-          width: '100%', padding: '9px 12px', boxSizing: 'border-box',
-          border: `1.5px solid ${focused ? '#4f46e5' : '#dee2e6'}`,
-          borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit',
-          background: '#fff', cursor: 'pointer'
-        }}
+        style={{ width: '100%', padding: '9px 12px', boxSizing: 'border-box', border: `1.5px solid ${focused ? '#4f46e5' : '#dee2e6'}`, borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', background: '#fff', cursor: 'pointer' }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       >
         {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -69,18 +50,32 @@ function SelectF({ label, value, onChange, options }) {
 }
 
 export default function Bookings() {
-  const [bookings, setBookings] = useState(initialBookings)
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const [filter, setFilter]     = useState('Semua')
-  const [modal, setModal]       = useState(null)  // null | 'add' | 'edit' | 'delete' | 'detail'
+  const [modal, setModal]       = useState(null)
   const [form, setForm]         = useState(empty)
   const [editId, setEditId]     = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [detail, setDetail]     = useState(null)
   const [confetti, setConfetti] = useState(false)
+  const [saving, setSaving]     = useState(false)
+
+  // Fetch dari Supabase
+  useEffect(() => {
+    fetchBookings()
+  }, [])
+
+  const fetchBookings = async () => {
+    setLoading(true)
+    const { data } = await supabase.from('bookings').select('*').order('created_at', { ascending: false })
+    setBookings(data || [])
+    setLoading(false)
+  }
 
   const filtered = bookings.filter(b => {
-    const matchSearch = b.name.toLowerCase().includes(search.toLowerCase()) || b.id.includes(search)
+    const matchSearch = b.name?.toLowerCase().includes(search.toLowerCase())
     const matchFilter = filter === 'Semua' || b.status === filter
     return matchSearch && matchFilter
   })
@@ -91,67 +86,53 @@ export default function Bookings() {
   const openDetail = (b) => { setDetail(b); setModal('detail') }
   const close      = () => { setModal(null); setEditId(null); setDeleteTarget(null); setDetail(null) }
 
-  const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }))
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) return
-    const amount = parseInt(form.amount) || 0
+    setSaving(true)
+    const payload = { name: form.name, phone: form.phone, date: form.date, service: form.service, status: form.status, amount: parseInt(form.amount) || 0 }
+
     if (modal === 'add') {
-      setBookings(prev => [...prev, { ...form, amount, id: genId() }])
+      await supabase.from('bookings').insert([payload])
       setConfetti(true)
     } else {
-      setBookings(prev => prev.map(b => b.id === editId ? { ...form, amount, id: editId } : b))
+      await supabase.from('bookings').update(payload).eq('id', editId)
     }
+    setSaving(false)
     close()
+    fetchBookings()
   }
 
-  const handleDelete = () => {
-    setBookings(prev => prev.filter(b => b.id !== deleteTarget.id))
+  const handleDelete = async () => {
+    await supabase.from('bookings').delete().eq('id', deleteTarget.id)
     close()
+    fetchBookings()
   }
 
   return (
     <div>
       <Confetti active={confetti} onComplete={() => setConfetti(false)} />
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a2e', marginBottom: 2 }}>Pemesanan</h1>
           <p style={{ fontSize: 13, color: '#868e96' }}>Kelola semua pemesanan klien</p>
         </div>
-        <button onClick={openAdd} style={{
-          padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-          background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-          color: '#fff', border: 'none', cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(79,70,229,0.3)'
-        }}>+ Tambah Pemesanan</button>
+        <button onClick={openAdd} style={{ padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(79,70,229,0.3)' }}>+ Tambah Pemesanan</button>
       </div>
 
-      {/* Search & Filter */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative' }}>
-          <svg style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }}
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input placeholder="Cari nama atau ID..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{
-              width: 240, padding: '9px 14px 9px 34px', border: '1px solid #e9ecef',
-              borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', background: '#fff'
-            }}
-            onFocus={e => e.target.style.borderColor = '#4f46e5'}
-            onBlur={e => e.target.style.borderColor = '#e9ecef'}
+          <svg style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input placeholder="Cari nama..." value={search} onChange={e => setSearch(e.target.value)}
+            style={{ width: 240, padding: '9px 14px 9px 34px', border: '1px solid #e9ecef', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', background: '#fff' }}
+            onFocus={e => e.target.style.borderColor = '#4f46e5'} onBlur={e => e.target.style.borderColor = '#e9ecef'}
           />
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {FILTERS.map(s => (
-            <button key={s} onClick={() => setFilter(s)} style={{
-              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
-              border: filter === s ? 'none' : '1px solid #e9ecef',
-              background: filter === s ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : '#fff',
-              color: filter === s ? '#fff' : '#495057', transition: 'all 0.15s'
-            }}>{s}</button>
+            <button key={s} onClick={() => setFilter(s)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: filter === s ? 'none' : '1px solid #e9ecef', background: filter === s ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : '#fff', color: filter === s ? '#fff' : '#495057' }}>{s}</button>
           ))}
         </div>
       </div>
@@ -161,42 +142,33 @@ export default function Bookings() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f8f9fa' }}>
-              {['ID', 'Klien', 'No. HP', 'Tanggal', 'Layanan', 'Status', 'Total', 'Aksi'].map(h => (
+              {['Klien', 'No. HP', 'Tanggal', 'Layanan', 'Status', 'Total', 'Aksi'].map(h => (
                 <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#868e96', letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: '#adb5bd', fontSize: 14 }}>Tidak ada data</td></tr>
-            ) : filtered.map((b, i) => {
+            {loading ? (
+              <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#adb5bd', fontSize: 14 }}>Memuat data...</td></tr>
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#adb5bd', fontSize: 14 }}>Tidak ada data</td></tr>
+            ) : filtered.map(b => {
               const st = statusStyle[b.status] || { bg: '#f1f3f5', color: '#495057' }
               return (
-                <tr key={b.id} onClick={() => openDetail(b)} style={{
-                  borderTop: '1px solid #f1f3f5', cursor: 'pointer', transition: 'background 0.12s'
-                }}
+                <tr key={b.id} onClick={() => openDetail(b)} style={{ borderTop: '1px solid #f1f3f5', cursor: 'pointer', transition: 'background 0.12s' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <td style={{ padding: '12px 14px', fontSize: 12, color: '#868e96', fontWeight: 600 }}>{b.id}</td>
                   <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>{b.name}</td>
                   <td style={{ padding: '12px 14px', fontSize: 13, color: '#495057' }}>{b.phone}</td>
                   <td style={{ padding: '12px 14px', fontSize: 13, color: '#495057', whiteSpace: 'nowrap' }}>{b.date}</td>
                   <td style={{ padding: '12px 14px', fontSize: 13, color: '#495057' }}>{b.service}</td>
-                  <td style={{ padding: '12px 14px' }}>
-                    <span style={{ ...st, padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{b.status}</span>
-                  </td>
+                  <td style={{ padding: '12px 14px' }}><span style={{ background: st.bg, color: st.color, padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{b.status}</span></td>
                   <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 700, color: '#4f46e5', whiteSpace: 'nowrap' }}>{fmt(b.amount)}</td>
                   <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => openEdit(b)} style={{
-                        padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                        border: '1px solid #e9ecef', background: '#f8f9fa', color: '#495057', cursor: 'pointer'
-                      }}>Edit</button>
-                      <button onClick={() => openDelete(b)} style={{
-                        padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                        border: '1px solid #ffe3e3', background: '#fff5f5', color: '#e03131', cursor: 'pointer'
-                      }}>Hapus</button>
+                      <button onClick={() => openEdit(b)} style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, border: '1px solid #e9ecef', background: '#f8f9fa', color: '#495057', cursor: 'pointer' }}>Edit</button>
+                      <button onClick={() => openDelete(b)} style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, border: '1px solid #ffe3e3', background: '#fff5f5', color: '#e03131', cursor: 'pointer' }}>Hapus</button>
                     </div>
                   </td>
                 </tr>
@@ -206,23 +178,19 @@ export default function Bookings() {
         </table>
       </div>
 
-      {/* Summary */}
       {filtered.length > 0 && (
         <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#868e96', padding: '0 4px' }}>
           <span>{filtered.length} pemesanan</span>
-          <span>Total: <strong style={{ color: '#4f46e5' }}>{fmt(filtered.reduce((a, b) => a + b.amount, 0))}</strong></span>
+          <span>Total: <strong style={{ color: '#4f46e5' }}>{fmt(filtered.reduce((a, b) => a + (b.amount || 0), 0))}</strong></span>
         </div>
       )}
 
-      {/* Modal Tambah / Edit */}
-      <Modal
-        isOpen={modal === 'add' || modal === 'edit'}
-        onClose={close}
-        title={modal === 'add' ? 'Tambah Pemesanan' : 'Edit Pemesanan'}
+      {/* Modal Tambah/Edit */}
+      <Modal isOpen={modal === 'add' || modal === 'edit'} onClose={close} title={modal === 'add' ? 'Tambah Pemesanan' : 'Edit Pemesanan'}
         footer={
           <>
             <button onClick={close} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e9ecef', background: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Batal</button>
-            <button onClick={handleSave} style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Simpan</button>
+            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
           </>
         }
       >
@@ -245,25 +213,21 @@ export default function Bookings() {
       >
         {detail && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 14, borderBottom: '1px solid #f1f3f5' }}>
-              <span style={{ fontSize: 20, fontWeight: 700, color: '#1a1a2e' }}>{detail.name}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, background: '#f1f3f5', color: '#868e96', padding: '3px 10px', borderRadius: 50 }}>{detail.id}</span>
-            </div>
+            <p style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 16 }}>{detail.name}</p>
             {[['Telepon', detail.phone], ['Tanggal', detail.date], ['Layanan', detail.service], ['Total', fmt(detail.amount)]].map(([l, v]) => (
               <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #f1f3f5', fontSize: 13 }}>
-                <span style={{ color: '#868e96' }}>{l}</span>
-                <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{v}</span>
+                <span style={{ color: '#868e96' }}>{l}</span><span style={{ fontWeight: 600, color: '#1a1a2e' }}>{v}</span>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', fontSize: 13 }}>
               <span style={{ color: '#868e96' }}>Status</span>
-              <span style={{ ...statusStyle[detail.status], padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{detail.status}</span>
+              <span style={{ ...(statusStyle[detail.status] || {}), padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{detail.status}</span>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Modal Konfirmasi Hapus */}
+      {/* Modal Hapus */}
       <Modal isOpen={modal === 'delete'} onClose={close} title="Hapus Pemesanan"
         footer={
           <>
@@ -272,9 +236,7 @@ export default function Bookings() {
           </>
         }
       >
-        <p style={{ fontSize: 14, color: '#495057', lineHeight: 1.6 }}>
-          Yakin ingin menghapus pemesanan <strong style={{ color: '#1a1a2e' }}>{deleteTarget?.name}</strong> ({deleteTarget?.id})? Tindakan ini tidak bisa dibatalkan.
-        </p>
+        <p style={{ fontSize: 14, color: '#495057', lineHeight: 1.6 }}>Yakin hapus pemesanan <strong>{deleteTarget?.name}</strong>? Tindakan ini tidak bisa dibatalkan.</p>
       </Modal>
     </div>
   )

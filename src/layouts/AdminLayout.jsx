@@ -1,6 +1,7 @@
 // src/layouts/AdminLayout.jsx
 import { useState } from 'react'
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 const IcDashboard = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -47,6 +48,13 @@ const IcChat = () => (
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
 )
+const IcUsers = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+)
 const IcLogout = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -78,11 +86,17 @@ const menuItems = [
   { to: '/admin/gallery',   label: 'Galeri',     Icon: IcGallery },
   { to: '/admin/invoice',   label: 'Invoice',    Icon: IcInvoice },
   { to: '/admin/chat',      label: 'Chat',       Icon: IcChat },
+  { to: '/admin/users',     label: 'Users',      Icon: IcUsers },
 ]
 
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/login')
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fa' }}>
@@ -167,7 +181,7 @@ export default function AdminLayout() {
 
         {/* Logout */}
         <div style={{ padding: '10px 8px', borderTop: '1px solid #e9ecef' }}>
-          <button onClick={() => navigate('/login')} style={{
+          <button onClick={handleLogout} style={{
             width: '100%', display: 'flex', alignItems: 'center',
             gap: collapsed ? 0 : 10,
             justifyContent: collapsed ? 'center' : 'flex-start',

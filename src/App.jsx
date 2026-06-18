@@ -17,6 +17,9 @@ const Services  = lazy(() => import('./pages/admin/Services'))   // Paket Weddin
 const Gallery   = lazy(() => import('./pages/admin/Gallery'))    // Galeri
 const Invoice   = lazy(() => import('./pages/admin/Invoice'))    // Invoice Transaksi
 const Chat      = lazy(() => import('./pages/admin/Chat'))       // Komunikasi Customer
+const Users     = lazy(() => import('./pages/admin/Users'))      // Data User
+
+const GuestDashboard = lazy(() => import('./pages/guest/GuestDashboard'))
 
 export default function App() {
   return (
@@ -38,9 +41,11 @@ export default function App() {
             <Route path="gallery"  element={<Gallery />} />
             <Route path="invoice"  element={<Invoice />} />
             <Route path="chat"     element={<Chat />} />
+            <Route path="users"    element={<Users />} />
           </Route>
 
           <Route path="*" element={<ErrorPage />} />
+          <Route path="/guest" element={<GuestDashboard />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
