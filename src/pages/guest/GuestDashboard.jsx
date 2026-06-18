@@ -13,29 +13,6 @@ const statusStyle = {
   'Cancelled':   { bg: '#fff1f2', color: '#be123c' },
 }
 
-const serviceIcons = {
-  'Full Package':  '💒',
-  'Photography':   '📸',
-  'Decoration':    '🌸',
-  'Catering':      '🍽️',
-  'Video & Film':  '🎬',
-  'Entertainment': '🎵',
-}
-
-const serviceColors = [
-  ['#667eea','#764ba2'], ['#f093fb','#f5576c'], ['#4facfe','#00f2fe'],
-  ['#43e97b','#38f9d7'], ['#fa709a','#fee140'], ['#a18cd1','#fbc2eb'],
-]
-
-const SERVICES_DATA = [
-  { id: 1, name: 'Full Package',  price: 25000000, desc: 'Paket lengkap semua layanan pernikahan termasuk dekorasi, katering, foto & video', features: ['Dekorasi venue', 'Katering 200 tamu', 'Foto & Video', 'Entertainment'] },
-  { id: 2, name: 'Photography',   price: 4000000,  desc: 'Fotografer profesional hari H dengan hasil berkualitas tinggi', features: ['2 fotografer', 'Editing profesional', '500+ foto', 'Album cetak'] },
-  { id: 3, name: 'Decoration',    price: 8000000,  desc: 'Dekorasi venue dan pelaminan sesuai tema impian kamu', features: ['Konsultasi tema', 'Dekorasi venue', 'Pelaminan', 'Bunga segar'] },
-  { id: 4, name: 'Catering',      price: 12000000, desc: 'Katering untuk 200 tamu dengan menu pilihan', features: ['200 porsi', 'Menu variasi', 'Tim pelayan', 'Peralatan makan'] },
-  { id: 5, name: 'Video & Film',  price: 5000000,  desc: 'Sinematografi pernikahan berkualitas sinema', features: ['Highlight film', 'Full dokumentasi', 'Drone shot', 'Edit cinematic'] },
-  { id: 6, name: 'Entertainment', price: 3500000,  desc: 'Live band dan hiburan untuk memeriahkan acara', features: ['Live band', 'MC profesional', '4 jam penampilan', 'Sound system'] },
-]
-
 function getInitials(name) {
   if (!name) return '?'
   const parts = name.split(/[\s&]+/).filter(Boolean)
@@ -43,7 +20,37 @@ function getInitials(name) {
   return parts[0]?.slice(0, 2).toUpperCase() || '?'
 }
 
-function Field({ lid', user.id)
+const avatarColors = [
+  ['#eef2ff', '#4f46e5'], ['#fdf2f8', '#9d174d'],
+  ['#f0fdf4', '#166534'], ['#fff7ed', '#9a3412'], ['#f0f9ff', '#075985'],
+]
+function getAvatarColor(name) {
+  return avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length]
+}
+
+export default function GuestDashboard() {
+  const [bookings, setBookings] = useState([])
+  const [profile, setProfile]   = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [selected, setSelected] = useState(null)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { navigate('/login'); return }
+
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      setProfile({ ...prof, email: user.email })
+
+      const { data: bk } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
       setBookings(bk || [])
       setLoading(false)
@@ -69,29 +76,16 @@ function Field({ lid', user.id)
   return (
     <div style={{ minHeight: '100vh', background: '#f8f9fa' }}>
       {/* Navbar */}
-      <header style={{
-        background: '#fff', borderBottom: '1px solid #e9ecef',
-        padding: '0 24px', height: 60,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-      }}>
+      <header style={{ background: '#fff', borderBottom: '1px solid #e9ecef', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, fontFamily: 'Georgia,serif' }}>W</span>
           </div>
           <span style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>Wedding Organizer</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 700, color: '#fff'
-            }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>
               {getInitials(profile?.full_name || profile?.email || 'G')}
             </div>
             <div>
@@ -100,11 +94,7 @@ function Field({ lid', user.id)
             </div>
           </div>
           <span style={{ background: '#eef2ff', color: '#4f46e5', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 50 }}>Guest</span>
-          <button onClick={handleLogout} style={{
-            padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-            border: '1px solid #e9ecef', background: '#fff', color: '#868e96',
-            cursor: 'pointer'
-          }}>Keluar</button>
+          <button onClick={handleLogout} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid #e9ecef', background: '#fff', color: '#868e96', cursor: 'pointer' }}>Keluar</button>
         </div>
       </header>
 
@@ -155,25 +145,18 @@ function Field({ lid', user.id)
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)' }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)' }}
                 >
-                  {/* Header kartu */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                    <div style={{
-                      width: 42, height: 42, borderRadius: '50%',
-                      background: '#eef2ff', color: '#4f46e5',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, fontSize: 13
-                    }}>{getInitials(b.name)}</div>
-                    <span style={{ ...st, padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{b.status}</span>
+                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
+                      {getInitials(b.name)}
+                    </div>
+                    <span style={{ background: st.bg, color: st.color, padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{b.status}</span>
                   </div>
-
                   <p style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>{b.name}</p>
                   <p style={{ fontSize: 12, color: '#868e96', marginBottom: 12 }}>{b.service}</p>
-
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, color: '#495057', marginBottom: 14 }}>
                     <span>📅 {b.date}</span>
                     <span>📞 {b.phone}</span>
                   </div>
-
                   <div style={{ paddingTop: 12, borderTop: '1px solid #f1f3f5' }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#4f46e5' }}>{fmt(b.amount)}</span>
                   </div>
@@ -192,7 +175,7 @@ function Field({ lid', user.id)
             onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a2e' }}>{selected.name}</h3>
-              <span style={{ ...(statusStyle[selected.status] || {}), padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{selected.status}</span>
+              <span style={{ background: (statusStyle[selected.status] || {}).bg, color: (statusStyle[selected.status] || {}).color, padding: '4px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600 }}>{selected.status}</span>
             </div>
             {[['Layanan', selected.service], ['Tanggal', selected.date], ['Telepon', selected.phone], ['Total', fmt(selected.amount)]].map(([l, v]) => (
               <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid #f1f3f5', fontSize: 13 }}>
@@ -200,11 +183,7 @@ function Field({ lid', user.id)
                 <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{v}</span>
               </div>
             ))}
-            <button onClick={() => setSelected(null)} style={{
-              marginTop: 18, width: '100%', padding: '11px', borderRadius: 8, border: 'none',
-              background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
-            }}>Tutup</button>
+            <button onClick={() => setSelected(null)} style={{ marginTop: 18, width: '100%', padding: '11px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tutup</button>
           </div>
         </div>
       )}
