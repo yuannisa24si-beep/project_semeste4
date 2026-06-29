@@ -25,22 +25,34 @@ export default function Login() {
       email: form.email,
       password: form.password,
     })
-
+    console.log('Login response', { data, signInError })
     if (signInError) {
       setLoading(false)
       setError('Email atau password salah. Silakan coba lagi.')
       return
     }
+    if (!data?.user?.id) {
+      setLoading(false)
+      setError('Login gagal: tidak ada ID pengguna. Hubungi admin.')
+      return
+    }
 
     // Cek role dari tabel profiles
-    const { data: profile } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', data.user.id)
       .single()
-
+    
+    if (profileError) {
+      console.error('Profile fetch error', profileError)
+      setLoading(false)
+      setError('Gagal mengambil data profil. Silakan coba lagi.')
+      return
+    }
+    
     setLoading(false)
-    if (profile?.role === 'admin') {
+    if (profileData?.role === 'admin') {
       navigate('/admin')
     } else {
       navigate('/guest')
