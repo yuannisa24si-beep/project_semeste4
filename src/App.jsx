@@ -19,6 +19,7 @@ const Gallery   = lazy(() => import('./pages/admin/Gallery'))
 const Invoice   = lazy(() => import('./pages/admin/Invoice'))
 const Chat      = lazy(() => import('./pages/admin/Chat'))
 const Users     = lazy(() => import('./pages/admin/Users'))
+const Feedback  = lazy(() => import('./pages/admin/Feedback'))
 
 // Guest
 const GuestDashboard = lazy(() => import('./pages/guest/GuestDashboard'))
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="invoice"  element={<Invoice />} />
             <Route path="chat"     element={<Chat />} />
             <Route path="users"    element={<Users />} />
+            <Route path="feedback" element={<Feedback />} />
           </Route>
 
           {/* Guest */}

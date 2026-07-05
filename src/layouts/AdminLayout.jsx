@@ -55,6 +55,11 @@ const IcUsers = () => (
     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
   </svg>
 )
+const IcFeedback = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+)
 const IcLogout = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -79,14 +84,15 @@ const IcChevronRight = () => (
 )
 
 const menuItems = [
-  { to: '/admin',           label: 'Dashboard',  Icon: IcDashboard },
-  { to: '/admin/bookings',  label: 'Pemesanan',  Icon: IcBooking },
-  { to: '/admin/clients',   label: 'Klien',      Icon: IcClients },
-  { to: '/admin/services',  label: 'Layanan',    Icon: IcServices },
-  { to: '/admin/gallery',   label: 'Galeri',     Icon: IcGallery },
-  { to: '/admin/invoice',   label: 'Invoice',    Icon: IcInvoice },
-  { to: '/admin/chat',      label: 'Chat',       Icon: IcChat },
-  { to: '/admin/users',     label: 'Users',      Icon: IcUsers },
+  { to: '/admin',            label: 'Dashboard',  Icon: IcDashboard },
+  { to: '/admin/bookings',   label: 'Pemesanan',  Icon: IcBooking },
+  { to: '/admin/clients',    label: 'Klien',      Icon: IcClients },
+  { to: '/admin/services',   label: 'Layanan',    Icon: IcServices },
+  { to: '/admin/gallery',    label: 'Galeri',     Icon: IcGallery },
+  { to: '/admin/invoice',    label: 'Invoice',    Icon: IcInvoice },
+  { to: '/admin/chat',       label: 'Chat',       Icon: IcChat },
+  { to: '/admin/users',      label: 'Users',      Icon: IcUsers },
+  { to: '/admin/feedback',   label: 'Feedback',   Icon: IcFeedback },
 ]
 
 export default function AdminLayout() {

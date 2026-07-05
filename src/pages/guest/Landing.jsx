@@ -41,6 +41,26 @@ const FAQS = [
   { q: 'Bisa lihat foto dokumentasi pernikahan dari sini?', a: 'Tentu! Tim WO akan mengupload foto dan video ke galeri yang bisa kamu akses kapan saja.' },
 ]
 
+const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+
+const SERVICE_IMG_MAP = {
+  'Fotografi Pernikahan':     'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&q=80',
+  'Videografi Sinematik':     'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=500&q=80',
+  'Dekorasi Pelaminan':       'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=500&q=80',
+  'Dekorasi Venue Lengkap':   'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=500&q=80',
+  'Catering 100 Porsi':       'https://images.unsplash.com/photo-1555244162-803834f70033?w=500&q=80',
+  'Catering 200 Porsi':       'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=500&q=80',
+  'MC Profesional':           'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
+  'Live Band 4 Jam':          'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&q=80',
+  'Wedding Organizer Penuh':  'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=500&q=80',
+  'Gaun Pengantin':           'https://images.unsplash.com/photo-1594552072238-b8a33785b6cd?w=500&q=80',
+  'Rias Pengantin':           'https://images.unsplash.com/photo-1487412912498-0447578fcca8?w=500&q=80',
+  'Undangan Digital':         'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=500&q=80',
+  'Sewa Gedung Half Day':     'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=500&q=80',
+  'Dokumentasi Pre-Wedding':  'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=500&q=80',
+}
+const DEFAULT_SVC_IMG = 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80'
+
 const BOOKINGS_PREVIEW = [
   { name: 'Andhie & Yasmin', date: '12 Jun 2026', status: 'Confirmed',   sc: 'rgba(16,185,129,0.2)',  tc: '#6ee7b7' },
   { name: 'Reza & Dina',     date: '5 Jul 2026',  status: 'Pending',     sc: 'rgba(245,158,11,0.2)', tc: '#fcd34d' },
@@ -49,6 +69,17 @@ const BOOKINGS_PREVIEW = [
 
 export default function Landing() {
   const [openFaq, setOpenFaq] = useState(null)
+  const [services, setServices] = useState([])
+  const [feedbacks, setFeedbacks] = useState([])
+
+  useEffect(() => {
+    // Ambil layanan aktif dari Supabase
+    supabase.from('services').select('*').eq('status', 'Aktif').order('created_at', { ascending: true })
+      .then(({ data }) => setServices(data || []))
+    // Ambil feedback terbaru
+    supabase.from('feedbacks').select('*').order('created_at', { ascending: false }).limit(6)
+      .then(({ data }) => setFeedbacks(data || []))
+  }, [])
 
   return (
     <div style={{ fontFamily: 'Inter,sans-serif', color: '#1a1a2e', overflowX: 'hidden' }}>
@@ -149,27 +180,93 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
+      {/* ── LAYANAN (dari Supabase, dengan foto) ── */}
       <section style={{ padding: '80px 5%', background: '#fff' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Fitur Unggulan</p>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Layanan Kami</p>
             <h2 style={{ fontSize: 36, fontWeight: 800, color: '#1a1a2e', marginBottom: 14, letterSpacing: -0.5 }}>Semua Kebutuhan di Satu Tempat</h2>
-            <p style={{ fontSize: 15, color: '#868e96', maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>Dari pemesanan hingga dokumentasi, semua tersedia untuk memudahkan pengelolaan pernikahan impian kamu</p>
+            <p style={{ fontSize: 15, color: '#868e96', maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>
+              Dari dekorasi hingga dokumentasi, semua layanan tersedia dengan harga transparan dan promo menarik
+            </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
-            {FEATURES.map(({ title, desc }, i) => (
-              <div key={i} style={{ padding: 28, borderRadius: 16, border: '1px solid #f1f3f5', background: '#fff', transition: 'all 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor='#ddd6fe'; e.currentTarget.style.boxShadow='0 12px 32px rgba(124,58,237,0.1)'; e.currentTarget.style.transform='translateY(-3px)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor='#f1f3f5'; e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform='translateY(0)' }}
-              >
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,rgba(124,58,237,0.1),rgba(79,70,229,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, fontSize: 22 }}>
-                  {['📋','👫','📸','💌','💬','🧾'][i]}
+
+          {services.length === 0 ? (
+            /* Fallback kalau belum ada data dari Supabase */
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
+              {['Fotografi Pernikahan','Dekorasi Pelaminan','Catering','Live Band','Gaun Pengantin','Wedding Organizer'].map((name, i) => (
+                <div key={i} style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid #f1f3f5', transition: 'all 0.25s' }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow='0 12px 32px rgba(124,58,237,0.12)'; e.currentTarget.style.transform='translateY(-4px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='translateY(0)' }}>
+                  <div style={{ height: 200, overflow: 'hidden' }}>
+                    <img src={SERVICE_IMG_MAP[name] || DEFAULT_SVC_IMG} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ padding: '16px 20px' }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e' }}>{name}</h3>
+                  </div>
                 </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e', marginBottom: 8 }}>{title}</h3>
-                <p style={{ fontSize: 13, color: '#868e96', lineHeight: 1.65 }}>{desc}</p>
-              </div>
-            ))}
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 22 }}>
+              {services.map((svc, i) => {
+                const imgSrc = svc.image_url || SERVICE_IMG_MAP[svc.name] || DEFAULT_SVC_IMG
+                const discountedPrice = svc.discount > 0 ? Math.round(svc.price * (1 - svc.discount / 100)) : svc.price
+                return (
+                  <div key={svc.id} style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid #e9ecef', background: '#fff', transition: 'all 0.25s', position: 'relative' }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow='0 16px 40px rgba(0,0,0,0.12)'; e.currentTarget.style.transform='translateY(-5px)' }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='translateY(0)' }}
+                  >
+                    {/* Foto */}
+                    <div style={{ position: 'relative', height: 200, overflow: 'hidden' }}>
+                      <img src={imgSrc} alt={svc.name}
+                        onError={e => { e.currentTarget.src = DEFAULT_SVC_IMG }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }}
+                        onMouseEnter={e => e.currentTarget.style.transform='scale(1.08)'}
+                        onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
+                      />
+                      {/* Overlay */}
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,12,41,0.7) 0%, transparent 55%)' }} />
+                      {/* Promo badge */}
+                      {svc.discount > 0 && (
+                        <div style={{ position: 'absolute', top: 12, left: 12, background: 'linear-gradient(135deg,#f59e0b,#ef4444)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                          {svc.promo_label || `HEMAT ${svc.discount}%`}
+                        </div>
+                      )}
+                      {/* Nama di atas foto */}
+                      <div style={{ position: 'absolute', bottom: 12, left: 14, right: 14 }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 700, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)', marginBottom: 0 }}>{svc.name}</h3>
+                      </div>
+                    </div>
+
+                    {/* Info bawah */}
+                    <div style={{ padding: '14px 16px 18px' }}>
+                      <p style={{ fontSize: 12, color: '#868e96', lineHeight: 1.55, marginBottom: 12, minHeight: 36 }}>{svc.description}</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          {svc.discount > 0 && (
+                            <span style={{ fontSize: 11, color: '#adb5bd', textDecoration: 'line-through', display: 'block', lineHeight: 1 }}>{fmt(svc.price)}</span>
+                          )}
+                          <span style={{ fontSize: 16, fontWeight: 800, color: '#4f46e5' }}>{fmt(discountedPrice)}</span>
+                        </div>
+                        <Link to="/register" style={{ padding: '7px 14px', borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
+                          Pesan →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <div style={{ textAlign: 'center', marginTop: 40 }}>
+            <Link to="/register" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: '#7c3aed', textDecoration: 'none', padding: '12px 28px', borderRadius: 12, border: '2px solid #7c3aed', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background='#7c3aed'; e.currentTarget.style.color='#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#7c3aed' }}
+            >
+              Daftar & Lihat Semua Layanan <IcArrow />
+            </Link>
           </div>
         </div>
       </section>

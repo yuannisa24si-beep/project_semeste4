@@ -4,7 +4,6 @@ import Modal from '../../components/Modal'
 import Confetti from '../../components/Confetti'
 import { supabase } from '../../lib/supabase'
 
-const SERVICES = ['Full Package', 'Photography', 'Decoration', 'Catering', 'Entertainment']
 const STATUSES = ['Pending', 'Confirmed', 'In Progress', 'Done', 'Cancelled']
 const FILTERS  = ['Semua', 'Confirmed', 'Pending', 'In Progress', 'Done', 'Cancelled']
 
@@ -17,7 +16,7 @@ const statusStyle = {
 }
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
-const empty = { name: '', phone: '', date: '', service: 'Full Package', status: 'Pending', amount: '' }
+const empty = { name: '', phone: '', date: '', service: '', status: 'Pending', amount: '' }
 
 function Field({ label, type = 'text', value, onChange, placeholder, required }) {
   const [focused, setFocused] = useState(false)
@@ -61,10 +60,14 @@ export default function Bookings() {
   const [detail, setDetail]     = useState(null)
   const [confetti, setConfetti] = useState(false)
   const [saving, setSaving]     = useState(false)
+  const [servicesList, setServicesList] = useState([])
 
   // Fetch dari Supabase
   useEffect(() => {
     fetchBookings()
+    // Ambil layanan aktif dari tabel services
+    supabase.from('services').select('id,name').eq('status', 'Aktif').order('created_at', { ascending: true })
+      .then(({ data }) => setServicesList(data || []))
   }, [])
 
   const fetchBookings = async () => {
@@ -80,7 +83,7 @@ export default function Bookings() {
     return matchSearch && matchFilter
   })
 
-  const openAdd    = () => { setForm(empty); setModal('add') }
+  const openAdd    = () => { setForm({ ...empty, service: servicesList[0]?.name || '' }); setModal('add') }
   const openEdit   = (b) => { setForm({ ...b, amount: String(b.amount) }); setEditId(b.id); setModal('edit') }
   const openDelete = (b) => { setDeleteTarget(b); setModal('delete') }
   const openDetail = (b) => { setDetail(b); setModal('detail') }
@@ -197,7 +200,16 @@ export default function Bookings() {
         <Field label="Nama Pasangan" value={form.name} onChange={set('name')} placeholder="Contoh: Reza & Dina" required />
         <Field label="No. HP" value={form.phone} onChange={set('phone')} placeholder="0812-xxxx-xxxx" />
         <Field label="Tanggal" type="date" value={form.date} onChange={set('date')} />
-        <SelectF label="Layanan" value={form.service} onChange={set('service')} options={SERVICES} />
+        <div style={{ marginBottom: 13 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#495057', marginBottom: 5 }}>Layanan</label>
+          <select value={form.service} onChange={set('service')}
+            style={{ width: '100%', padding: '9px 12px', boxSizing: 'border-box', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit', background: '#fff', cursor: 'pointer' }}
+            onFocus={e => e.target.style.borderColor='#4f46e5'} onBlur={e => e.target.style.borderColor='#dee2e6'}
+          >
+            <option value="">-- Pilih layanan --</option>
+            {servicesList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+          </select>
+        </div>
         <SelectF label="Status" value={form.status} onChange={set('status')} options={STATUSES} />
         <Field label="Total (Rp)" type="number" value={form.amount} onChange={set('amount')} placeholder="15000000" />
       </Modal>
