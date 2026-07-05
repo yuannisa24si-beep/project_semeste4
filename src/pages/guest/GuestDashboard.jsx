@@ -20,6 +20,50 @@ function getInitials(name) {
   return parts[0]?.slice(0, 2).toUpperCase() || '?'
 }
 
+// Membership tiers based on total booking amount
+const TIERS = [
+  {
+    id: 'silver',
+    name: 'Silver',
+    minAmount: 0,
+    maxAmount: 999999,
+    color: '#9ca3af',
+    bg: '#f3f4f6',
+    textColor: '#374151',
+    label: 'Rp 0 – Rp 999.999',
+    benefits: ['Diskon Layanan 5%', 'Akses Galeri Eksklusif'],
+  },
+  {
+    id: 'gold',
+    name: 'Gold',
+    minAmount: 1000000,
+    maxAmount: 4999999,
+    color: '#f59e0b',
+    bg: '#fef3c7',
+    textColor: '#92400e',
+    label: 'Rp 1.000.000 – Rp 4.999.999',
+    benefits: ['Diskon Layanan 10%', 'Prioritas Pemesanan', 'Akses Galeri Eksklusif'],
+  },
+  {
+    id: 'platinum',
+    name: 'Platinum',
+    minAmount: 5000000,
+    maxAmount: Infinity,
+    color: '#7c3aed',
+    bg: '#ede9fe',
+    textColor: '#4c1d95',
+    label: '> Rp 5.000.000',
+    benefits: ['Diskon Layanan 15%', 'Prioritas Pemesanan', 'Konsultasi Gratis', 'Akses Galeri Eksklusif'],
+  },
+]
+
+function getTier(totalAmount) {
+  for (let i = TIERS.length - 1; i >= 0; i--) {
+    if (totalAmount >= TIERS[i].minAmount) return TIERS[i]
+  }
+  return TIERS[0]
+}
+
 const PACKAGES = [
   { id: 'basic',    name: 'Basic Package',    price: 5000000,  desc: 'Cocok untuk pernikahan sederhana dan intim', features: ['Dekorasi pelaminan', 'Dokumentasi foto 4 jam', 'MC profesional'] },
   { id: 'silver',   name: 'Silver Package',   price: 12000000, desc: 'Paket lengkap untuk 100-150 tamu undangan', features: ['Dekorasi venue & pelaminan', 'Foto & video 8 jam', 'Katering 100 porsi', 'MC & entertainment'] },
@@ -49,11 +93,10 @@ export default function GuestDashboard() {
   const [profile, setProfile]         = useState(null)
   const [loading, setLoading]         = useState(true)
   const [selected, setSelected]       = useState(null)
-  const [showEdit, setShowEdit]       = useState(false)
   const [editForm, setEditForm]       = useState({ full_name: '', phone: '', wedding_date: '' })
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPkg, setSavingPkg]     = useState(false)
-  const [activeTab, setActiveTab]     = useState('pesanan') // 'pesanan' | 'paket' | 'profil'
+  const [activeTab, setActiveTab]     = useState('pesanan')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -78,7 +121,6 @@ export default function GuestDashboard() {
     await supabase.from('profiles').update({ full_name: editForm.full_name, phone: editForm.phone, wedding_date: editForm.wedding_date }).eq('id', profile.id)
     setProfile(p => ({ ...p, ...editForm }))
     setSavingProfile(false)
-    setShowEdit(false)
   }
 
   const handleSelectPackage = async (pkgId) => {
@@ -99,6 +141,8 @@ export default function GuestDashboard() {
   )
 
   const selectedPkg = PACKAGES.find(p => p.id === profile?.selected_package)
+  const totalBookingAmount = bookings.reduce((a, b) => a + (b.amount || 0), 0)
+  const currentTier = getTier(totalBookingAmount)
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f9fa', fontFamily: 'Inter,sans-serif' }}>
@@ -120,7 +164,10 @@ export default function GuestDashboard() {
               <p style={{ fontSize: 11, color: '#868e96', lineHeight: 1.2 }}>{profile?.email}</p>
             </div>
           </div>
-          {selectedPkg && <span style={{ background: '#fef3c7', color: '#92400e', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 50 }}>{selectedPkg.name}</span>}
+          {/* Member badge (changed from Guest) */}
+          <span style={{ background: currentTier.bg, color: currentTier.textColor, fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 50, border: `1px solid ${currentTier.color}44` }}>
+            Member · {currentTier.name}
+          </span>
           <button onClick={handleLogout} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: '1px solid #e9ecef', background: '#fff', color: '#868e96', cursor: 'pointer' }}>Keluar</button>
         </div>
       </header>
@@ -133,8 +180,12 @@ export default function GuestDashboard() {
         <h1 style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Halo, {profile?.full_name || 'Member'}</h1>
         <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>{profile?.email}</p>
         {profile?.wedding_date && <p style={{ fontSize: 12, color: '#a78bfa' }}>Hari Pernikahan: {profile.wedding_date}</p>}
+        {/* Tier badge in hero */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, background: `${currentTier.color}33`, border: `1px solid ${currentTier.color}66`, color: currentTier.color === '#9ca3af' ? '#e5e7eb' : currentTier.color, fontSize: 12, fontWeight: 700, padding: '5px 14px', borderRadius: 50 }}>
+          <IcStar /> Tier: {currentTier.name}
+        </div>
         {selectedPkg && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d', fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 50 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, marginLeft: 8, background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d', fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 50 }}>
             <IcStar /> Paket Aktif: {selectedPkg.name}
           </div>
         )}
@@ -163,7 +214,7 @@ export default function GuestDashboard() {
                 { label: 'Total Pesanan', value: bookings.length },
                 { label: 'Confirmed',     value: bookings.filter(b => b.status === 'Confirmed').length },
                 { label: 'Pending',       value: bookings.filter(b => b.status === 'Pending').length },
-                { label: 'Total Biaya',   value: fmt(bookings.reduce((a,b) => a+(b.amount||0),0)) },
+                { label: 'Total Biaya',   value: fmt(totalBookingAmount) },
               ].map((s,i) => (
                 <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 16, border: '1px solid #e9ecef' }}>
                   <p style={{ fontSize: 11, color: '#868e96', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 }}>{s.label}</p>
@@ -206,14 +257,70 @@ export default function GuestDashboard() {
           </div>
         )}
 
-        {/* ── TAB: PAKET ── */}
+        {/* ── TAB: PAKET (Membership Tiers) ── */}
         {activeTab === 'paket' && (
           <div>
             <div style={{ marginBottom: 24 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 6 }}>Pilih Paket Pernikahan</h2>
-              <p style={{ fontSize: 13, color: '#868e96' }}>Pilih paket yang sesuai kebutuhan kamu. Paket bisa diganti kapan saja.</p>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 6 }}>Keanggotaan</h2>
+              <p style={{ fontSize: 13, color: '#868e96' }}>Tier kamu ditentukan otomatis dari total pemesanan. Semakin banyak memesan, semakin tinggi tier dan keuntunganmu!</p>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
+
+            {/* Current tier summary */}
+            <div style={{ background: `linear-gradient(135deg, ${currentTier.color}22, ${currentTier.color}11)`, border: `1.5px solid ${currentTier.color}55`, borderRadius: 14, padding: '18px 22px', marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <p style={{ fontSize: 12, color: '#868e96', marginBottom: 4 }}>Tier Kamu Saat Ini</p>
+                <p style={{ fontSize: 22, fontWeight: 800, color: currentTier.textColor }}>{currentTier.name}</p>
+                <p style={{ fontSize: 12, color: '#868e96', marginTop: 2 }}>Total pemesanan: {fmt(totalBookingAmount)}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: 11, color: '#868e96', marginBottom: 4 }}>Rentang tier:</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: currentTier.textColor }}>{currentTier.label}</p>
+              </div>
+            </div>
+
+            {/* Tier cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
+              {TIERS.map(tier => {
+                const isActive = currentTier.id === tier.id
+                return (
+                  <div key={tier.id} style={{
+                    background: '#fff', borderRadius: 16, padding: 24,
+                    border: `2px solid ${isActive ? tier.color : '#e9ecef'}`,
+                    position: 'relative', transition: 'all 0.2s',
+                    boxShadow: isActive ? `0 8px 24px ${tier.color}33` : '0 1px 4px rgba(0,0,0,0.04)'
+                  }}>
+                    {isActive && (
+                      <div style={{ position: 'absolute', top: -1, right: 16, background: tier.color, color: '#fff', fontSize: 10, fontWeight: 700, padding: '4px 12px', borderRadius: '0 0 8px 8px' }}>
+                        TIER KAMU
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: tier.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <IcStar />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 16, fontWeight: 800, color: '#1a1a2e' }}>{tier.name}</p>
+                        <p style={{ fontSize: 11, color: '#868e96' }}>{tier.label}</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+                      {tier.benefits.map(b => (
+                        <div key={b} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#495057' }}>
+                          <span style={{ color: tier.color, flexShrink: 0 }}><IcCheck /></span>{b}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Package selection section */}
+            <div style={{ marginTop: 36, marginBottom: 16 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>Pilih Paket Pernikahan</h2>
+              <p style={{ fontSize: 13, color: '#868e96' }}>Pilih paket yang sesuai kebutuhan kamu.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
               {PACKAGES.map(pkg => {
                 const isActive = profile?.selected_package === pkg.id
                 return (
@@ -224,14 +331,10 @@ export default function GuestDashboard() {
                     boxShadow: isActive ? '0 8px 24px rgba(124,58,237,0.15)' : '0 1px 4px rgba(0,0,0,0.04)'
                   }}>
                     {isActive && (
-                      <div style={{ position: 'absolute', top: -1, right: 16, background: '#7c3aed', color: '#fff', fontSize: 10, fontWeight: 700, padding: '4px 12px', borderRadius: '0 0 8px 8px' }}>
-                        PAKET AKTIF
-                      </div>
+                      <div style={{ position: 'absolute', top: -1, right: 16, background: '#7c3aed', color: '#fff', fontSize: 10, fontWeight: 700, padding: '4px 12px', borderRadius: '0 0 8px 8px' }}>PAKET AKTIF</div>
                     )}
                     {pkg.id === 'gold' && !isActive && (
-                      <div style={{ position: 'absolute', top: -1, right: 16, background: '#f59e0b', color: '#fff', fontSize: 10, fontWeight: 700, padding: '4px 12px', borderRadius: '0 0 8px 8px' }}>
-                        TERPOPULER
-                      </div>
+                      <div style={{ position: 'absolute', top: -1, right: 16, background: '#f59e0b', color: '#fff', fontSize: 10, fontWeight: 700, padding: '4px 12px', borderRadius: '0 0 8px 8px' }}>TERPOPULER</div>
                     )}
                     <h3 style={{ fontSize: 17, fontWeight: 800, color: '#1a1a2e', marginBottom: 4 }}>{pkg.name}</h3>
                     <p style={{ fontSize: 13, color: '#868e96', marginBottom: 14, lineHeight: 1.5 }}>{pkg.desc}</p>
@@ -247,8 +350,7 @@ export default function GuestDashboard() {
                       width: '100%', padding: '11px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: isActive ? 'default' : 'pointer', fontFamily: 'inherit',
                       border: isActive ? 'none' : '2px solid #7c3aed',
                       background: isActive ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent',
-                      color: isActive ? '#fff' : '#7c3aed',
-                      transition: 'all 0.15s'
+                      color: isActive ? '#fff' : '#7c3aed', transition: 'all 0.15s'
                     }}>
                       {savingPkg === pkg.id ? 'Menyimpan...' : isActive ? 'Paket Aktif' : 'Pilih Paket Ini'}
                     </button>
@@ -267,7 +369,6 @@ export default function GuestDashboard() {
               <p style={{ fontSize: 13, color: '#868e96' }}>Perbarui informasi diri kamu</p>
             </div>
             <div style={{ background: '#fff', borderRadius: 16, padding: 28, border: '1px solid #e9ecef' }}>
-              {/* Avatar */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid #f1f3f5' }}>
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#fff' }}>
                   {getInitials(editForm.full_name || profile?.email || 'G')}
@@ -278,7 +379,6 @@ export default function GuestDashboard() {
                   {selectedPkg && <p style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, marginTop: 2 }}>{selectedPkg.name}</p>}
                 </div>
               </div>
-              {/* Form */}
               {[
                 { label: 'Nama Lengkap', key: 'full_name', type: 'text', placeholder: 'Nama kamu' },
                 { label: 'Nomor HP', key: 'phone', type: 'tel', placeholder: '0812-xxxx-xxxx' },

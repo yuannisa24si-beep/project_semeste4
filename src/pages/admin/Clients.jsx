@@ -1,13 +1,7 @@
 // src/pages/admin/Clients.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from '../../components/Modal'
-
-const initialClients = [
-  { id: 1, name: 'Andhie & Yasmin', email: 'andhie@email.com', phone: '0812-3456-7890', date: '2026-06-12', package: 'Full Package', total: 15000000 },
-  { id: 2, name: 'Budi & Sari', email: 'budi@email.com', phone: '0813-2345-6789', date: '2026-06-20', package: 'Photography', total: 4000000 },
-  { id: 3, name: 'Rizky & Amanda', email: 'rizky@email.com', phone: '0814-5678-9012', date: '2026-07-05', package: 'Decoration', total: 6500000 },
-  { id: 4, name: 'Dimas & Nur Hidayah', email: 'dimas@email.com', phone: '0815-6789-0123', date: '2026-07-18', package: 'Full Package', total: 18000000 },
-]
+import { supabase } from '../../lib/supabase'
 
 const PACKAGES = ['Full Package', 'Photography', 'Decoration', 'Catering', 'Entertainment']
 
@@ -24,7 +18,7 @@ const avatarColors = [
   ['#f0fdf4', '#166534'], ['#fff7ed', '#9a3412'], ['#f0f9ff', '#075985'],
 ]
 function getAvatarColor(name) {
-  return avatarColors[name.charCodeAt(0) % avatarColors.length]
+  return avatarColors[(name || '').charCodeAt(0) % avatarColors.length]
 }
 
 const pkgColor = {
@@ -35,7 +29,6 @@ const pkgColor = {
 
 const empty = { name: '', email: '', phone: '', date: '', package: 'Full Package', total: '' }
 
-// Reusable inline label+input
 function Field({ label, type = 'text', value, onChange, placeholder, required }) {
   const [focused, setFocused] = useState(false)
   return (
@@ -78,17 +71,30 @@ function SelectF({ label, value, onChange, options }) {
 }
 
 export default function Clients() {
-  const [clients, setClients] = useState(initialClients)
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState(null)   // null | 'add' | 'edit' | 'detail' | 'delete'
+  const [modal, setModal] = useState(null)
   const [form, setForm] = useState(empty)
   const [editId, setEditId] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [detail, setDetail] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetchClients()
+  }, [])
+
+  const fetchClients = async () => {
+    setLoading(true)
+    const { data, error } = await supabase.from('clients').select('*').order('id', { ascending: true })
+    if (!error) setClients(data || [])
+    setLoading(false)
+  }
 
   const filtered = clients.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
+    (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (c.email || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const openAdd = () => { setForm(empty); setModal('add') }
@@ -99,21 +105,39 @@ export default function Clients() {
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim() || !form.email.trim()) return
-    const total = parseInt(form.total) || 0
-    if (modal === 'add') {
-      setClients(prev => [...prev, { ...form, total, id: Date.now() }])
-    } else {
-      setClients(prev => prev.map(c => c.id === editId ? { ...form, total, id: editId } : c))
+    setSaving(true)
+    const payload = {
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      date: form.date,
+      package: form.package,
+      total: parseInt(form.total) || 0,
     }
+    if (modal === 'add') {
+      const { data, error } = await supabase.from('clients').insert([payload]).select().single()
+      if (!error && data) setClients(prev => [...prev, data])
+    } else {
+      const { data, error } = await supabase.from('clients').update(payload).eq('id', editId).select().single()
+      if (!error && data) setClients(prev => prev.map(c => c.id === editId ? data : c))
+    }
+    setSaving(false)
     close()
   }
 
-  const handleDelete = () => {
-    setClients(prev => prev.filter(c => c.id !== deleteTarget.id))
+  const handleDelete = async () => {
+    const { error } = await supabase.from('clients').delete().eq('id', deleteTarget.id)
+    if (!error) setClients(prev => prev.filter(c => c.id !== deleteTarget.id))
     close()
   }
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+      <p style={{ color: '#868e96', fontSize: 14 }}>Memuat data...</p>
+    </div>
+  )
 
   return (
     <div>
@@ -150,58 +174,56 @@ export default function Clients() {
         </div>
       </div>
 
-      {/* Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-        {filtered.length === 0 && (
-          <p style={{ color: '#adb5bd', fontSize: 14, gridColumn: '1/-1', textAlign: 'center', padding: 40 }}>Tidak ada klien ditemukan</p>
-        )}
-        {filtered.map(c => {
-          const initials = getInitials(c.name)
-          const [bgColor, textColor] = getAvatarColor(c.name)
-          const [pkgBg, pkgTxt] = pkgColor[c.package] || ['#f1f3f5', '#495057']
-          return (
-            <div key={c.id} onClick={() => openDetail(c)} style={{
-              background: '#fff', borderRadius: 12, padding: 20,
-              border: '1px solid #e9ecef', cursor: 'pointer',
-              transition: 'all 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'; e.currentTarget.style.borderColor = '#c5c8ff' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = '#e9ecef' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: '50%', background: bgColor, color: textColor,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 700, fontSize: 14, flexShrink: 0, border: `2px solid ${textColor}22`
-                }}>{initials}</div>
-                <div style={{ overflow: 'hidden', flex: 1 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a2e', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</p>
-                  <p style={{ fontSize: 12, color: '#868e96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.email}</p>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: '#495057' }}>
-                <span>📞 {c.phone}</span>
-                <span>📅 {c.date}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px solid #f1f3f5' }}>
-                <span style={{ background: pkgBg, color: pkgTxt, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 50 }}>{c.package}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{fmt(c.total)}</span>
-              </div>
-              {/* Edit / Delete buttons */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button onClick={e => openEdit(c, e)} style={{
-                  flex: 1, padding: '7px', borderRadius: 7, fontSize: 12, fontWeight: 600,
-                  border: '1px solid #e9ecef', background: '#f8f9fa', color: '#495057', cursor: 'pointer'
-                }}>Edit</button>
-                <button onClick={e => openDelete(c, e)} style={{
-                  flex: 1, padding: '7px', borderRadius: 7, fontSize: 12, fontWeight: 600,
-                  border: '1px solid #ffe3e3', background: '#fff5f5', color: '#e03131', cursor: 'pointer'
-                }}>Hapus</button>
-              </div>
-            </div>
-          )
-        })}
+      {/* Table */}
+      <div style={{ overflowX: 'auto', background: '#fff', borderRadius: 12, border: '1px solid #e9ecef', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+        <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ background: '#f8f9fa' }}>
+              {['Klien', 'Email', 'Telepon', 'Tanggal', 'Paket', 'Total', 'Aksi'].map(header => (
+                <th key={header} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#868e96', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding: 32, textAlign: 'center', fontSize: 14, color: '#adb5bd' }}>
+                  Tidak ada klien ditemukan
+                </td>
+              </tr>
+            ) : filtered.map(c => {
+              const st = pkgColor[c.package] || ['#f1f3f5', '#495057']
+              return (
+                <tr key={c.id} onClick={() => openDetail(c)} style={{ cursor: 'pointer', transition: 'background 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 600, color: '#1a1a2e' }}>{c.name}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: '#495057' }}>{c.email}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: '#495057' }}>{c.phone}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: '#495057' }}>{c.date}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: st[1], fontWeight: 600 }}>{c.package}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{fmt(c.total)}</td>
+                  <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button onClick={() => openEdit(c)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e9ecef', background: '#f8f9fa', color: '#495057', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
+                      <button onClick={() => openDelete(c)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ffe3e3', background: '#fff5f5', color: '#e03131', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Hapus</button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
+      {filtered.length > 0 && (
+        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: '#868e96' }}>
+          <span>{filtered.length} klien</span>
+          <span>Total data: {fmt(filtered.reduce((sum, client) => sum + (client.total || 0), 0))}</span>
+        </div>
+      )}
 
       {/* Modal Tambah / Edit */}
       <Modal
@@ -211,7 +233,9 @@ export default function Clients() {
         footer={
           <>
             <button onClick={close} style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e9ecef', background: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Batal</button>
-            <button onClick={handleSave} style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Simpan</button>
+            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {saving ? 'Menyimpan...' : 'Simpan'}
+            </button>
           </>
         }
       >

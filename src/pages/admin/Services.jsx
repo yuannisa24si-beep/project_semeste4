@@ -1,45 +1,64 @@
 // src/pages/admin/Services.jsx
-// src/pages/admin/Services.jsx
-import { useState } from 'react'
-import Button from '../../components/Button'
-import Badge from '../../components/Badge'
-import Card from '../../components/Card'
-import Modal from '../../components/Modal'
-import InputField from '../../components/InputField'
-import PageHeader from '../../components/PageHeader'
-import Alert from '../../components/Alert'
-
-const initialServices = [
-  { id: 1, name: 'Full Package', price: 25000000, desc: 'Paket lengkap semua layanan pernikahan', status: 'Aktif' },
-  { id: 2, name: 'Photography', price: 4000000, desc: 'Fotografer profesional hari H', status: 'Aktif' },
-  { id: 3, name: 'Decoration', price: 8000000, desc: 'Dekorasi venue dan pelaminan', status: 'Aktif' },
-  { id: 4, name: 'Catering', price: 12000000, desc: 'Katering untuk 200 tamu', status: 'Aktif' },
-  { id: 5, name: 'Video & Film', price: 5000000, desc: 'Sinematografi pernikahan', status: 'Nonaktif' },
-  { id: 6, name: 'Entertainment', price: 3500000, desc: 'Live band dan hiburan', status: 'Aktif' },
-]
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
 
 export default function Services() {
-  const [services, setServices] = useState(initialServices)
+  const [services, setServices] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', price: '', desc: '' })
+  const [form, setForm] = useState({ name: '', price: '', description: '' })
+  const [saving, setSaving] = useState(false)
 
-  const toggleStatus = (id) => {
-    setServices(prev => prev.map(s =>
-      s.id === id ? { ...s, status: s.status === 'Aktif' ? 'Nonaktif' : 'Aktif' } : s
-    ))
+  useEffect(() => {
+    fetchServices()
+  }, [])
+
+  const fetchServices = async () => {
+    setLoading(true)
+    const { data, error } = await supabase.from('services').select('*').order('id', { ascending: true })
+    if (!error) setServices(data || [])
+    setLoading(false)
   }
 
-  const handleAdd = (e) => {
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'Aktif' ? 'Nonaktif' : 'Aktif'
+    const { error } = await supabase.from('services').update({ status: newStatus }).eq('id', id)
+    if (!error) {
+      setServices(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s))
+    }
+  }
+
+  const handleAdd = async (e) => {
     e.preventDefault()
-    setServices(prev => [...prev, {
-      id: Date.now(), name: form.name,
-      price: Number(form.price), desc: form.desc, status: 'Aktif'
-    }])
-    setForm({ name: '', price: '', desc: '' })
+    setSaving(true)
+    const { data, error } = await supabase.from('services').insert([{
+      name: form.name,
+      price: Number(form.price),
+      description: form.description,
+      status: 'Aktif'
+    }]).select().single()
+    if (!error && data) {
+      setServices(prev => [...prev, data])
+    }
+    setForm({ name: '', price: '', description: '' })
     setShowForm(false)
+    setSaving(false)
   }
+
+  const handleDelete = async (id) => {
+    const { error } = await supabase.from('services').delete().eq('id', id)
+    if (!error) {
+      setServices(prev => prev.filter(s => s.id !== id))
+    }
+  }
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+      <p style={{ color: '#868e96', fontSize: 14 }}>Memuat data...</p>
+    </div>
+  )
 
   return (
     <div>
@@ -58,6 +77,11 @@ export default function Services() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        {services.length === 0 && (
+          <p style={{ color: '#adb5bd', fontSize: 14, gridColumn: '1/-1', textAlign: 'center', padding: 40 }}>
+            Belum ada layanan. Tambahkan layanan baru.
+          </p>
+        )}
         {services.map(s => (
           <div key={s.id} style={{
             background: '#fff', borderRadius: 12, padding: 20,
@@ -75,17 +99,17 @@ export default function Services() {
                 color: s.status === 'Aktif' ? '#065f46' : '#6b7280'
               }}>{s.status}</span>
             </div>
-            <p style={{ fontSize: 14, color: '#666666', marginBottom: 12, lineHeight: 1.5 }}>{s.desc}</p>
+            <p style={{ fontSize: 14, color: '#666666', marginBottom: 12, lineHeight: 1.5 }}>{s.description}</p>
             <p style={{ fontSize: 20, fontWeight: 700, color: '#0000ff', marginBottom: 16 }}>{fmt(s.price)}</p>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => toggleStatus(s.id)} style={{
+              <button onClick={() => toggleStatus(s.id, s.status)} style={{
                 flex: 1, padding: '8px', borderRadius: 6, fontSize: 13,
                 background: '#e6e6ff', color: '#0000ff',
                 border: 'none', cursor: 'pointer', fontWeight: 500
               }}>
                 {s.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
               </button>
-              <button onClick={() => setServices(prev => prev.filter(x => x.id !== s.id))} style={{
+              <button onClick={() => handleDelete(s.id)} style={{
                 padding: '8px 14px', borderRadius: 6, fontSize: 13,
                 background: '#fee2e2', color: '#ef4444',
                 border: 'none', cursor: 'pointer'
@@ -116,7 +140,7 @@ export default function Services() {
                 <input type="text" required placeholder="Nama layanan"
                   value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                   style={{
-                    width: '100%', padding: '10px 14px',
+                    width: '100%', padding: '10px 14px', boxSizing: 'border-box',
                     border: '1px solid #d3d3d3', borderRadius: 8,
                     fontSize: 14, outline: 'none', fontFamily: 'Inter, sans-serif'
                   }}
@@ -131,7 +155,7 @@ export default function Services() {
                 <input type="number" required placeholder="0"
                   value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
                   style={{
-                    width: '100%', padding: '10px 14px',
+                    width: '100%', padding: '10px 14px', boxSizing: 'border-box',
                     border: '1px solid #d3d3d3', borderRadius: 8,
                     fontSize: 14, outline: 'none', fontFamily: 'Inter, sans-serif'
                   }}
@@ -144,9 +168,9 @@ export default function Services() {
                   Deskripsi
                 </label>
                 <input type="text" required placeholder="Deskripsi singkat"
-                  value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })}
+                  value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
                   style={{
-                    width: '100%', padding: '10px 14px',
+                    width: '100%', padding: '10px 14px', boxSizing: 'border-box',
                     border: '1px solid #d3d3d3', borderRadius: 8,
                     fontSize: 14, outline: 'none', fontFamily: 'Inter, sans-serif'
                   }}
@@ -159,10 +183,10 @@ export default function Services() {
                   flex: 1, padding: '12px', borderRadius: 8, fontSize: 14,
                   background: '#f3f4f6', color: '#666666', border: 'none', cursor: 'pointer'
                 }}>Batal</button>
-                <button type="submit" style={{
+                <button type="submit" disabled={saving} style={{
                   flex: 1, padding: '12px', borderRadius: 8, fontSize: 14,
                   background: '#0000ff', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 500
-                }}>Simpan</button>
+                }}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
               </div>
             </form>
           </div>

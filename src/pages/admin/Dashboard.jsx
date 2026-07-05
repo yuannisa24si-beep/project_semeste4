@@ -1,6 +1,5 @@
 // src/pages/admin/Dashboard.jsx
-// ✅ useState  : menyimpan jam real-time dan status loading
-// ✅ useEffect : fetch data statistik (simulasi) + jam real-time tiap detik
+// Data real dari Supabase: bookings, clients, services, invoices
 import { useState, useEffect } from 'react'
 import StatCard from '../../components/StatCard'
 import Card from '../../components/Card'
@@ -8,6 +7,7 @@ import PageHeader from '../../components/PageHeader'
 import Progress from '../../components/Progress'
 import Tooltip from '../../components/Tooltip'
 import { TooltipProvider } from '../../components/Tooltip'
+import { supabase } from '../../lib/supabase'
 
 const IcBookingS = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -33,86 +33,176 @@ const IcCalendarS = () => (
     <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
   </svg>
 )
-
-const monthlyActivity = [
-  { month: 'Jan', value: 25 }, { month: 'Feb', value: 28 }, { month: 'Mar', value: 30 },
-  { month: 'Apr', value: 32 }, { month: 'Mei', value: 35 }, { month: 'Jun', value: 38 },
-]
-const topPackages = [
-  { name: 'Full Package', percentage: 35, amount: 'Rp 85jt' },
-  { name: 'Photography',  percentage: 28, amount: 'Rp 42jt' },
-  { name: 'Decoration',   percentage: 22, amount: 'Rp 38jt' },
-  { name: 'Catering',     percentage: 15, amount: 'Rp 28jt' },
-]
-const monthlyEarnings = [
-  { month: 'Jan', value: 35000000 }, { month: 'Feb', value: 42000000 },
-  { month: 'Mar', value: 38000000 }, { month: 'Apr', value: 45000000 },
-  { month: 'Mei', value: 48000000 }, { month: 'Jun', value: 52000000 },
-]
-const topServices = [
-  { name: 'Full Package',  amount: 'Rp 85jt', percentage: 40 },
-  { name: 'Photography',   amount: 'Rp 42jt', percentage: 20 },
-  { name: 'Decoration',    amount: 'Rp 38jt', percentage: 18 },
-  { name: 'Catering',      amount: 'Rp 28jt', percentage: 13 },
-  { name: 'Entertainment', amount: 'Rp 15jt', percentage: 7  },
-]
-const yearlyEarnings = [
-  { year: '2022', amount: 180000000 },
-  { year: '2023', amount: 250000000 },
-  { year: '2024', amount: 380000000 },
-]
+const IcInvoiceS = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+  </svg>
+)
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
 const fmtShort = n => {
-  if (n >= 1000000000) return `Rp ${(n/1000000000).toFixed(1)}M`
-  if (n >= 1000000)    return `Rp ${(n/1000000).toFixed(0)}jt`
-  return `Rp ${(n/1000).toFixed(0)}rb`
+  if (n >= 1_000_000_000) return `Rp ${(n / 1_000_000_000).toFixed(1)}M`
+  if (n >= 1_000_000)     return `Rp ${(n / 1_000_000).toFixed(0)}jt`
+  return `Rp ${(n / 1_000).toFixed(0)}rb`
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des']
+
 export default function Dashboard() {
-  // ✅ useState — (1) jam real-time, (2) status loading, (3) data stats dari "server"
-  // What  : useState menyimpan nilai yang berubah dan memicu re-render
-  // Why   : clock perlu update setiap detik; statsData perlu diisi setelah fetch
-  // Who   : komponen Dashboard yang membutuhkan data dinamis
-  // When  : setiap kali nilai berubah, React re-render tampilan
-  // Where : di dalam komponen Dashboard
-  // How   : deklarasi dengan const [nilai, setNilai] = useState(nilaiAwal)
-  const [clock, setClock]       = useState(new Date())
-  const [loading, setLoading]   = useState(true)
-  const [statsData, setStatsData] = useState([])
+  const [clock, setClock]     = useState(new Date())
+  const [loading, setLoading] = useState(true)
 
-  // useEffect — (1) simulasi fetch data stats saat komponen mount
-  // What  : useEffect menjalankan side effect setelah render
-  // Why   : data stats harus diambil dari server, tidak bisa langsung di render
-  // Who   : admin yang membuka Dashboard
-  // When  : hanya sekali saat komponen pertama kali di-mount (dependency [] kosong)
-  // Where : di halaman Dashboard, saat pertama dibuka
-  // How   : setTimeout 800ms mensimulasikan API call, lalu setStatsData + setLoading
-  useEffect(() => {
-    document.title = 'Dashboard — Wedding Organizer'
-    const timer = setTimeout(() => {
-      setStatsData([
-        { label: 'Total Pemesanan', value: '48',      Icon: IcBookingS,  change: '+12%'     },
-        { label: 'Klien Aktif',     value: '32',      Icon: IcUsersS,    change: '+5%'      },
-        { label: 'Pendapatan',      value: 'Rp 48jt', Icon: IcMoneyS,    change: '+18%'     },
-        { label: 'Event Mendatang', value: '7',       Icon: IcCalendarS, change: '2 minggu' },
-      ])
-      setLoading(false)
-    }, 800)
-    return () => clearTimeout(timer) // cleanup mencegah memory leak
-  }, [])
+  // raw data
+  const [bookings, setBookings] = useState([])
+  const [clients,  setClients]  = useState([])
+  const [invoices, setInvoices] = useState([])
 
-  //  useEffect — (2) jam real-time update setiap detik
-  // What  : menjalankan setInterval untuk memperbarui state clock
-  // Why   : admin perlu melihat waktu terkini di dashboard
-  // Who   : semua admin yang membuka halaman Dashboard
-  // When  : berjalan setiap 1000ms, cleanup saat komponen unmount
-  // Where : ditampilkan di sudut kanan atas header Dashboard
-  // How   : setInterval + return cleanup agar tidak terjadi memory leak
+  // ── jam real-time ──────────────────────────────────────────────────────────
   useEffect(() => {
     const id = setInterval(() => setClock(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
+
+  // ── fetch semua data dari Supabase ─────────────────────────────────────────
+  useEffect(() => {
+    document.title = 'Dashboard — Wedding Organizer'
+
+    const fetchAll = async () => {
+      setLoading(true)
+      const [bRes, cRes, iRes] = await Promise.all([
+        supabase.from('bookings').select('*'),
+        supabase.from('clients').select('*'),
+        supabase.from('invoices').select('*'),
+      ])
+      setBookings(bRes.data || [])
+      setClients(cRes.data  || [])
+      setInvoices(iRes.data || [])
+      setLoading(false)
+    }
+
+    fetchAll()
+  }, [])
+
+  // ── derived stats ──────────────────────────────────────────────────────────
+  const totalBookings   = bookings.length
+  const totalClients    = clients.length
+  const totalRevenue    = invoices.filter(i => i.status === 'Paid').reduce((a, b) => a + (b.amount || 0), 0)
+  const today           = new Date()
+  const upcomingEvents  = bookings.filter(b => {
+    if (!b.date) return false
+    return new Date(b.date) >= today && b.status !== 'Cancelled' && b.status !== 'Done'
+  }).length
+
+  const statsData = [
+    { label: 'Total Pemesanan', value: String(totalBookings),    Icon: IcBookingS,  change: `${bookings.filter(b => b.status === 'Confirmed').length} confirmed` },
+    { label: 'Klien Terdaftar', value: String(totalClients),     Icon: IcUsersS,    change: `${clients.length} total` },
+    { label: 'Pendapatan (Paid)',value: fmtShort(totalRevenue),   Icon: IcMoneyS,    change: `${invoices.filter(i => i.status === 'Paid').length} invoice lunas` },
+    { label: 'Event Mendatang',  value: String(upcomingEvents),   Icon: IcCalendarS, change: 'belum selesai' },
+  ]
+
+  // ── booking per bulan (6 bulan terakhir) ──────────────────────────────────
+  const monthlyActivity = (() => {
+    const result = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+      const yr = d.getFullYear(), mn = d.getMonth()
+      const count = bookings.filter(b => {
+        if (!b.created_at) return false
+        const bd = new Date(b.created_at)
+        return bd.getFullYear() === yr && bd.getMonth() === mn
+      }).length
+      result.push({ month: MONTH_NAMES[mn], value: count })
+    }
+    return result
+  })()
+
+  const maxActivity = Math.max(...monthlyActivity.map(m => m.value), 1)
+
+  // ── pendapatan per bulan dari invoices paid (6 bulan terakhir) ───────────
+  const monthlyEarnings = (() => {
+    const result = []
+    for (let i = 5; i >= 0; i--) {
+      const d  = new Date(today.getFullYear(), today.getMonth() - i, 1)
+      const yr = d.getFullYear(), mn = d.getMonth()
+      const total = invoices
+        .filter(inv => {
+          if (!inv.date || inv.status !== 'Paid') return false
+          const id = new Date(inv.date)
+          return id.getFullYear() === yr && id.getMonth() === mn
+        })
+        .reduce((a, b) => a + (b.amount || 0), 0)
+      result.push({ month: MONTH_NAMES[mn], value: total })
+    }
+    return result
+  })()
+
+  const maxEarnings = Math.max(...monthlyEarnings.map(m => m.value), 1)
+  const currentMonthEarnings = monthlyEarnings[monthlyEarnings.length - 1]?.value || 0
+
+  // ── paket terlaris dari bookings ──────────────────────────────────────────
+  const packageCount = {}
+  const packageRevenue = {}
+  bookings.forEach(b => {
+    const svc = b.service || 'Lainnya'
+    packageCount[svc]   = (packageCount[svc]   || 0) + 1
+    packageRevenue[svc] = (packageRevenue[svc] || 0) + (b.amount || 0)
+  })
+  const topPackages = Object.entries(packageCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, count]) => ({
+      name,
+      count,
+      percentage: totalBookings > 0 ? Math.round((count / totalBookings) * 100) : 0,
+      amount: fmtShort(packageRevenue[name] || 0),
+    }))
+
+  // ── layanan terlaris dari invoices ────────────────────────────────────────
+  const svcRevenue = {}
+  invoices.filter(i => i.status === 'Paid').forEach(i => {
+    const pkg = i.package || 'Lainnya'
+    svcRevenue[pkg] = (svcRevenue[pkg] || 0) + (i.amount || 0)
+  })
+  const totalSvcRevenue = Object.values(svcRevenue).reduce((a, b) => a + b, 0) || 1
+  const topServices = Object.entries(svcRevenue)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, rev]) => ({
+      name,
+      amount: fmtShort(rev),
+      percentage: Math.round((rev / totalSvcRevenue) * 100),
+    }))
+
+  // ── pendapatan per tahun ───────────────────────────────────────────────────
+  const yearRevenue = {}
+  invoices.filter(i => i.status === 'Paid' && i.date).forEach(i => {
+    const yr = new Date(i.date).getFullYear()
+    yearRevenue[yr] = (yearRevenue[yr] || 0) + (i.amount || 0)
+  })
+  const yearlyEarnings = Object.entries(yearRevenue)
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, amount]) => ({ year, amount }))
+  const maxYear = Math.max(...yearlyEarnings.map(y => y.amount), 1)
+  const totalAllYears = yearlyEarnings.reduce((a, b) => a + b.amount, 0)
+
+  // ── booking status breakdown ──────────────────────────────────────────────
+  const statusColors = {
+    'Confirmed':   '#2f9e44',
+    'Pending':     '#f59f00',
+    'In Progress': '#4f46e5',
+    'Done':        '#099268',
+    'Cancelled':   '#e03131',
+  }
+  const bookingByStatus = ['Confirmed', 'Pending', 'In Progress', 'Done', 'Cancelled'].map(s => ({
+    status: s,
+    count: bookings.filter(b => b.status === s).length,
+    color: statusColors[s],
+  }))
+
+  // ── invoice summary ────────────────────────────────────────────────────────
+  const invoicePaid    = invoices.filter(i => i.status === 'Paid').length
+  const invoicePending = invoices.filter(i => i.status === 'Pending').length
+  const invoiceOverdue = invoices.filter(i => i.status === 'Overdue').length
 
   const timeStr = clock.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   const dateStr = clock.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -121,20 +211,19 @@ export default function Dashboard() {
     <TooltipProvider>
     <div style={{ padding: '0 4px' }}>
 
-      {/* Header + Jam Real-time */}
+      {/* Header + Jam */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a2e', marginBottom: 2 }}>Dashboard</h1>
-          <p style={{ fontSize: 13, color: '#868e96' }}>Ringkasan aktivitas Wedding Organizer</p>
+          <p style={{ fontSize: 13, color: '#868e96' }}>Ringkasan aktivitas Wedding Organizer — data real-time</p>
         </div>
-        {/*  useState clock ditampilkan */}
         <div style={{ textAlign: 'right', background: '#fff', borderRadius: 10, padding: '10px 16px', border: '1px solid #e9ecef' }}>
           <p style={{ fontSize: 20, fontWeight: 700, color: '#4f46e5', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>{timeStr}</p>
           <p style={{ fontSize: 11, color: '#868e96', marginTop: 2 }}>{dateStr}</p>
         </div>
       </div>
 
-      {/* Stats Cards — shimmer skeleton saat loading */}
+      {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 28 }}>
         {loading
           ? Array.from({ length: 4 }).map((_, i) => (
@@ -151,85 +240,183 @@ export default function Dashboard() {
       </div>
       <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
 
-      {/* Row 2 */}
+      {/* Row 2 — Booking per Bulan + Status Breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 28 }}>
-        <Card title="Aktif Bulan Ini" padding="20px">
+        <Card title="Booking per Bulan (6 Bln Terakhir)" padding="20px">
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 20 }}>
-            <span style={{ fontSize: 36, fontWeight: 700, color: '#4f46e5' }}>38</span>
-            <span style={{ fontSize: 14, color: '#868e96' }}>klien aktif</span>
-            <span style={{ fontSize: 12, color: '#2f9e44', marginLeft: 'auto' }}>↑ +18%</span>
+            <span style={{ fontSize: 36, fontWeight: 700, color: '#4f46e5' }}>
+              {monthlyActivity[monthlyActivity.length - 1]?.value ?? 0}
+            </span>
+            <span style={{ fontSize: 14, color: '#868e96' }}>booking bulan ini</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 80 }}>
-            {monthlyActivity.map((item, idx) => (
-              <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ height: `${(item.value/40)*60}px`, background: '#4f46e5', borderRadius: '4px 4px 0 0', marginBottom: 6, opacity: 0.7 + idx * 0.05 }} />
-                <span style={{ fontSize: 10, color: '#868e96' }}>{item.month}</span>
+          {loading
+            ? <div style={{ height: 80, background: '#f1f3f5', borderRadius: 8 }} />
+            : (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 80 }}>
+                {monthlyActivity.map((item, idx) => (
+                  <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
+                    <Tooltip content={`${item.month}: ${item.value} booking`} side="top">
+                      <div style={{
+                        height: `${Math.max((item.value / maxActivity) * 60, item.value > 0 ? 4 : 0)}px`,
+                        background: idx === monthlyActivity.length - 1 ? '#4f46e5' : '#c5c8ff',
+                        borderRadius: '4px 4px 0 0', marginBottom: 6,
+                        cursor: 'default', transition: 'background 0.2s'
+                      }} />
+                    </Tooltip>
+                    <span style={{ fontSize: 10, color: '#868e96' }}>{item.month}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )
+          }
         </Card>
 
-        <Card title="Paket Terlaris" padding="20px">
-          {topPackages.map((pkg, idx) => (
-            <div key={idx} style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                <Tooltip content={`${pkg.name}: ${pkg.amount}`} side="top">
-                  <span style={{ fontSize: 13, color: '#1a1a2e', cursor: 'default' }}>{pkg.name}</span>
-                </Tooltip>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5' }}>{pkg.amount}</span>
+        <Card title="Status Pemesanan" padding="20px">
+          {loading
+            ? <div style={{ height: 120, background: '#f1f3f5', borderRadius: 8 }} />
+            : bookingByStatus.map((item, idx) => (
+              <div key={idx} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, color: '#1a1a2e' }}>{item.status}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: item.color }}>{item.count}</span>
+                </div>
+                <div style={{ background: '#f1f3f5', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${totalBookings > 0 ? (item.count / totalBookings) * 100 : 0}%`,
+                    background: item.color, height: '100%', borderRadius: 4,
+                    transition: 'width 0.6s ease'
+                  }} />
+                </div>
               </div>
-              <Progress value={pkg.percentage} max={100} showValue={false} color="#4f46e5" size="sm" />
-              <span style={{ fontSize: 10, color: '#868e96', marginTop: 2, display: 'block' }}>{pkg.percentage}%</span>
-            </div>
-          ))}
+            ))
+          }
         </Card>
       </div>
 
-      {/* Row 3 */}
-      <Card title="Pendapatan Bulan Ini" padding="20px" style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <span style={{ fontSize: 24, fontWeight: 700, color: '#4f46e5' }}>{fmt(52000000)}</span>
+      {/* Row 3 — Pendapatan Bulanan */}
+      <Card title="Pendapatan Bulanan (Invoice Lunas)" padding="20px" style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+          <span style={{ fontSize: 13, color: '#868e96' }}>Bulan ini</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color: '#4f46e5' }}>
+            {loading ? '—' : fmt(currentMonthEarnings)}
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 100 }}>
-          {monthlyEarnings.map((item, idx) => (
-            <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ height: `${(item.value/60000000)*80}px`, background: '#4f46e5', borderRadius: '4px 4px 0 0', marginBottom: 6, opacity: 0.65 + idx * 0.07 }} />
-              <span style={{ fontSize: 10, color: '#868e96' }}>{item.month}</span>
+        {loading
+          ? <div style={{ height: 100, background: '#f1f3f5', borderRadius: 8 }} />
+          : (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 100 }}>
+              {monthlyEarnings.map((item, idx) => (
+                <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
+                  <Tooltip content={`${item.month}: ${fmtShort(item.value)}`} side="top">
+                    <div style={{
+                      height: `${Math.max((item.value / maxEarnings) * 80, item.value > 0 ? 4 : 0)}px`,
+                      background: idx === monthlyEarnings.length - 1 ? '#4f46e5' : '#c5c8ff',
+                      borderRadius: '4px 4px 0 0', marginBottom: 6,
+                      cursor: 'default'
+                    }} />
+                  </Tooltip>
+                  <span style={{ fontSize: 10, color: '#868e96' }}>{item.month}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )
+        }
       </Card>
 
-      {/* Row 4 */}
+      {/* Row 4 — Paket Terlaris + Invoice Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 28 }}>
+        <Card title="Paket Terlaris (dari Booking)" padding="20px">
+          {loading
+            ? <div style={{ height: 120, background: '#f1f3f5', borderRadius: 8 }} />
+            : topPackages.length === 0
+              ? <p style={{ color: '#adb5bd', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada data booking</p>
+              : topPackages.map((pkg, idx) => (
+                <div key={idx} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                    <Tooltip content={`${pkg.name}: ${pkg.count} booking · ${pkg.amount}`} side="top">
+                      <span style={{ fontSize: 13, color: '#1a1a2e', cursor: 'default' }}>{pkg.name}</span>
+                    </Tooltip>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5' }}>{pkg.count}x</span>
+                  </div>
+                  <Progress value={pkg.percentage} max={100} showValue={false} color="#4f46e5" size="sm" />
+                  <span style={{ fontSize: 10, color: '#868e96', marginTop: 2, display: 'block' }}>{pkg.percentage}% · {pkg.amount}</span>
+                </div>
+              ))
+          }
+        </Card>
+
+        <Card title="Ringkasan Invoice" padding="20px">
+          {loading
+            ? <div style={{ height: 120, background: '#f1f3f5', borderRadius: 8 }} />
+            : (
+              <>
+                {[
+                  { label: 'Lunas (Paid)',    count: invoicePaid,    color: '#2f9e44', bg: '#d3f9d8' },
+                  { label: 'Menunggu',        count: invoicePending, color: '#f59f00', bg: '#fff3bf' },
+                  { label: 'Overdue',         count: invoiceOverdue, color: '#e03131', bg: '#ffe3e3' },
+                ].map((item, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '12px 14px', borderRadius: 10, background: item.bg, marginBottom: 10
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{item.label}</span>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: item.color }}>{item.count}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid #e9ecef', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 13, color: '#868e96' }}>Total Pendapatan Paid</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#4f46e5' }}>{fmtShort(totalRevenue)}</span>
+                </div>
+              </>
+            )
+          }
+        </Card>
+      </div>
+
+      {/* Row 5 — Layanan Terlaris + Pendapatan per Tahun */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-        <Card title="Layanan Terlaris" padding="20px">
-          {topServices.map((s, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: idx !== topServices.length-1 ? '1px solid #f1f3f5' : 'none' }}>
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{s.name}</span>
-                <div style={{ width: `${s.percentage}%`, height: 3, background: '#4f46e5', borderRadius: 2, marginTop: 4, opacity: 0.7 }} />
-              </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5' }}>{s.amount}</span>
-            </div>
-          ))}
+        <Card title="Layanan Terlaris (dari Invoice Lunas)" padding="20px">
+          {loading
+            ? <div style={{ height: 120, background: '#f1f3f5', borderRadius: 8 }} />
+            : topServices.length === 0
+              ? <p style={{ color: '#adb5bd', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada invoice lunas</p>
+              : topServices.map((s, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: idx !== topServices.length - 1 ? '1px solid #f1f3f5' : 'none' }}>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{s.name}</span>
+                    <div style={{ width: `${s.percentage}%`, height: 3, background: '#4f46e5', borderRadius: 2, marginTop: 4, opacity: 0.7 }} />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5', marginLeft: 12 }}>{s.amount}</span>
+                </div>
+              ))
+          }
         </Card>
 
         <Card title="Pendapatan per Tahun" padding="20px">
-          {yearlyEarnings.map((y, idx) => (
-            <div key={idx} style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{y.year}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5' }}>{fmtShort(y.amount)}</span>
-              </div>
-              <div style={{ background: '#f1f3f5', borderRadius: 4, height: 8, overflow: 'hidden' }}>
-                <div style={{ width: `${(y.amount/400000000)*100}%`, background: '#4f46e5', height: '100%', borderRadius: 4 }} />
-              </div>
-            </div>
-          ))}
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e9ecef', display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Total</span>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#4f46e5' }}>{fmtShort(810000000)}</span>
-          </div>
+          {loading
+            ? <div style={{ height: 120, background: '#f1f3f5', borderRadius: 8 }} />
+            : yearlyEarnings.length === 0
+              ? <p style={{ color: '#adb5bd', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Belum ada data pendapatan</p>
+              : (
+                <>
+                  {yearlyEarnings.map((y, idx) => (
+                    <div key={idx} style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{y.year}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5' }}>{fmtShort(y.amount)}</span>
+                      </div>
+                      <div style={{ background: '#f1f3f5', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+                        <div style={{ width: `${(y.amount / maxYear) * 100}%`, background: '#4f46e5', height: '100%', borderRadius: 4 }} />
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e9ecef', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>Total</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#4f46e5' }}>{fmtShort(totalAllYears)}</span>
+                  </div>
+                </>
+              )
+          }
         </Card>
       </div>
 
